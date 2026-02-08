@@ -3,14 +3,17 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 
 class ExtendedKalmanFilter:
-    def __init__(self, num_states, model):
+    def __init__(self, num_states, model, Ts_meas):
         # Parameters
         self.num_states = num_states
         self.model = model
+        self.Ts_meas = Ts_meas
 
     def initialize_filter(self):
         state = self.model.initial_state
-        noise_var = np.diag(self.model.process_noise_var)
+        noise_vars = np.ones_like(state)
+        noise_vars[-1] = (1e-5)**2
+        noise_var = np.diag(noise_vars)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
         self.R = self.model.measurement_noise_var
@@ -32,21 +35,25 @@ class ExtendedKalmanFilter:
         k1 = self.model.params["k1"]
         k2 = self.model.params["k2"]
         k3 = self.model.params["k3"]
+        G = m[0]
+        Q = m[1]
+        I = m[2]
+        SI = m[4]
+
 
         # Jacobian Matrix Calculation
-        # print(m)
-        f_model_func[0,0] = 1+dt*(-pG-((m[4]*m[1])/(1 + alphaG*m[1])))
-        f_model_func[0,1] = dt*((-m[4]*m[0])/((1+alphaG*m[1])**2))
-        f_model_func[0,4] = dt*((-m[0]*m[1])/(1+alphaG*m[1]))
+        f_model_func[0,0] = 1 - dt*pG - dt*SI*Q/(1 + alphaG*Q)
+        f_model_func[0,1] = -dt*SI*G / (1 + alphaG*Q)**2
+        f_model_func[0,4] = -dt*G*Q/(1 + alphaG*Q)
 
-        f_model_func[1,1] = 1+dt*(-nI-(nC*(1/((1+alphaG*m[1])**2))))
+        f_model_func[1,1] = 1 -dt*nI - dt*nC/(1+alphaG*Q)**2
         f_model_func[1,2] = dt*nI
 
         f_model_func[2,1] = dt*nI
-        f_model_func[2,2] = 1+dt*(-nK-(nL/((1+alphaI*m[2])**2))-nI)
-        f_model_func[2,3] = dt*((1-xL)/VI)
+        f_model_func[2,2] = 1 - dt*nK - dt*nL/(1+alphaI*I)**2 - dt*nI
+        f_model_func[2,3] = dt*(1-xL)/VI
 
-        f_model_func[3,2] = ((-k1*k2)/k3)*np.exp((-m[2]*k2)/k3)
+        f_model_func[3,2] = (-k1*k2/k3)*np.exp(-I*k2/k3)
 
         f_model_func[4,4] = 1
 
@@ -66,11 +73,9 @@ class ExtendedKalmanFilter:
         return state_predict, noise_var_predict
 
     def filter_update(self, state_predict, noise_var_predict, y):
-        v = y - state_predict[0]
-        S = self.h_model_func @ noise_var_predict @ self.h_model_func.T + self.R
-        K = (noise_var_predict @ self.h_model_func.T) * (1/S)
-        state_update = state_predict + K * v
-        noise_var_update = noise_var_predict - S*(K @ K.T)
+        K =  noise_var_predict @ self.h_model_func / (self.h_model_func @ noise_var_predict @ self.h_model_func.T + self.R)
+        state_update = state_predict + K*(y-state_predict[0])
+        noise_var_update = (np.eye(self.num_states) - K @ self.h_model_func) @ noise_var_predict
         return state_update, noise_var_update
 
     def predict_to_time(self, state, noise_var, t):
@@ -91,11 +96,13 @@ class ExtendedKalmanFilter:
         state_next, noise_var_next = self.filter_predict(state, noise_var, t)
 
         # if there is a measurement, update filter
-        if yk:
+        if yk is not None:
             self.t_last_measurement = t
-            state_next, noise_var_next = self.filter_update(state_next, noise_var_next,yk)
+            return self.filter_update(state_next, noise_var_next,yk)
 
-        return state_next, noise_var_next
+        else:
+            return state_next, noise_var_next
+        
 
     class simulate:
         def __init__(self, t, t_meas, G_meas, filter):
@@ -127,8 +134,8 @@ class ExtendedKalmanFilter:
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
                         print(f"Predicting the next 2 hours...")
-                        pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+120))
-                        G_pred[idx:idx+120] = pred[:,0]
+                        pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.Ts_meas))
+                        G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
 
                 # If no measurement
                 else:

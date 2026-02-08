@@ -7,13 +7,14 @@ from utils import plot_weighted_kde
 rng = np.random.default_rng()
 
 class BootstrapParticleFilter:
-    def __init__(self, num_particles, num_states, model, resampling_method="systematic"):
+    def __init__(self, num_particles, num_states, model, Ts_meas, resampling_method="systematic"):
         # Copy parameters
         self.num_particles = num_particles
         self.num_states = num_states
         self.model = model
         self.step_counter = None
         self.resampling_method = resampling_method
+        self.Ts_meas = Ts_meas
 
         # Initialise particles and weights
         self.particles = np.zeros((num_particles, num_states))
@@ -165,8 +166,8 @@ class BootstrapParticleFilter:
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
                         print(f"Predicting the next 2 hours...")
-                        pred = self.filter.predict_to_time(int(ti+120))
-                        G_pred[idx:idx+120] = pred[:,0]
+                        pred = self.filter.predict_to_time(int(ti+self.filter.Ts_meas))
+                        G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
 
                 # else no measurement, so just update particles
                 else: 
