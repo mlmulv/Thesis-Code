@@ -28,7 +28,7 @@ class BootstrapParticleFilter:
 
     def initialise_particles(self):
         for i in range(self.num_particles):
-            self.particles[i] = self.model.draw_initial_state()
+            self.particles[i,:] = self.model.draw_initial_state()
         # self.step_counter = 0
 
     def get_weights(self):
@@ -71,7 +71,7 @@ class BootstrapParticleFilter:
         for ti in range(self.t_last_measurement, t):
             u_vec = self.model.get_inputs(ti)
             for i in range(self.num_particles):
-                particles[i] = self.model.state_update(particles[i], u_vec, ti)
+                particles[i] = self.model.state_update(particles[i], u_vec, ti)[:,0]
             mean = np.average(particles, weights=np.exp(log_weights), axis=0)
             predictions[step] = mean
             step += 1
@@ -97,7 +97,7 @@ class BootstrapParticleFilter:
         # Propagate particles through model for all times until this sample
         u_vec = self.model.get_inputs(t)
         for i in range(self.num_particles):
-            self.particles[i] = self.model.state_update(self.particles[i], u_vec, t)
+            self.particles[i,:] = self.model.state_update(self.particles[i,:], u_vec, t)[:,0]
 
         if yk: #measurement was included => update weights
             self.t_last_measurement = t

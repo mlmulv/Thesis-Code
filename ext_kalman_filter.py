@@ -11,12 +11,12 @@ class ExtendedKalmanFilter:
 
     def initialize_filter(self):
         state = self.model.initial_state
-        noise_vars = np.ones_like(state)
+        noise_vars = np.ones(len(state))
         noise_vars[-1] = (1e-5)**2
         noise_var = np.diag(noise_vars)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
-        self.R = self.model.measurement_noise_var
+        self.R = np.array([[self.model.measurement_noise_var]])
         return state, noise_var
 
     def calc_f_model_func(self, m):
@@ -35,10 +35,10 @@ class ExtendedKalmanFilter:
         k1 = self.model.params["k1"]
         k2 = self.model.params["k2"]
         k3 = self.model.params["k3"]
-        G = m[0]
-        Q = m[1]
-        I = m[2]
-        SI = m[4]
+        G = m[0,0]
+        Q = m[1,0]
+        I = m[2,0]
+        SI = m[4,0]
 
 
         # Jacobian Matrix Calculation
@@ -60,7 +60,7 @@ class ExtendedKalmanFilter:
         return f_model_func
 
     def calc_h_model_func(self):
-        calc_h_model_func = np.zeros((self.num_states,))
+        calc_h_model_func = np.zeros((1,self.num_states))
         calc_h_model_func[0] = 1
         return calc_h_model_func
 
@@ -69,13 +69,15 @@ class ExtendedKalmanFilter:
         u_vec = self.model.get_inputs(t) 
         f_model_func = self.calc_f_model_func(state_update)
         state_predict = self.model.state_update(state_update, u_vec, t)
-        noise_var_predict = f_model_func @ noise_var_update @ f_model_func.T + self.Q
+        noise_var_predict = np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T)) + self.Q
         return state_predict, noise_var_predict
 
     def filter_update(self, state_predict, noise_var_predict, y):
-        K =  noise_var_predict @ self.h_model_func / (self.h_model_func @ noise_var_predict @ self.h_model_func.T + self.R)
-        state_update = state_predict + K*(y-state_predict[0])
-        noise_var_update = (np.eye(self.num_states) - K @ self.h_model_func) @ noise_var_predict
+        S = np.matmul(self.h_model_func, np.matmul(noise_var_predict, self.h_model_func.T)) + self.R
+        K = np.matmul(noise_var_predict, np.matmul(self.h_model_func.T, np.linalg.inv(S)))
+        v = np.array([y - state_predict[0]])
+        state_update = state_predict + np.matmul(K, v)
+        noise_var_update = noise_var_predict - np.matmul(K, np.matmul(S,K.T))
         return state_update, noise_var_update
 
     def predict_to_time(self, state, noise_var, t):
@@ -85,7 +87,7 @@ class ExtendedKalmanFilter:
 
         for ti in range(self.t_last_measurement, t):
             state_next, noise_var_next = self.filter_predict(state, noise_var, ti)
-            predictions[step] = state_next
+            predictions[step] = state_next[:,0]
             state = state_next
             noise_var = noise_var_next
             step += 1
@@ -122,6 +124,7 @@ class ExtendedKalmanFilter:
             saved_state = np.zeros((len(self.t), num_states))
             saved_noise_var = np.zeros((len(self.t), num_states, num_states))
             state, noise_var = self.filter.initialize_filter()
+            vars_diag = []
             
             for idx, ti in enumerate(self.t):
                 # If a measurement occured at this time
@@ -141,12 +144,12 @@ class ExtendedKalmanFilter:
                 else:
                     state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, ti)
 
-                saved_state[idx], saved_noise_var[idx] = state_next, noise_var_next
-                G_est[idx] = state_next[0]
-                Q_est[idx] = state_next[1]
-                I_est[idx] = state_next[2]
-                Uen_est[idx] = state_next[3]
-                SI_est[idx] = state_next[-1]
+                saved_state[idx], saved_noise_var[idx] = state_next[:,0], noise_var_next[:,0]
+                G_est[idx] = state_next[0,0]
+                Q_est[idx] = state_next[1,0]
+                I_est[idx] = state_next[2,0]
+                Uen_est[idx] = state_next[3,0]
+                SI_est[idx] = state_next[-1,0]
                 state = state_next
                 noise_var = noise_var_next
 

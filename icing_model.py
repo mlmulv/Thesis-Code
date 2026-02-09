@@ -36,9 +36,9 @@ class ICINGModel:
         self.ufuncs = u_funcs
 
     def draw_initial_state(self):
-        noise_vars = np.ones_like(self.initial_state)
+        noise_vars = np.ones((len(self.initial_state),))
         noise_vars[-1] = (1e-5)**2
-        return rng.multivariate_normal(mean=self.initial_state, cov=np.diag(noise_vars))
+        return rng.multivariate_normal(mean=self.initial_state[:,0], cov=np.diag(noise_vars))
     
     def get_inputs(self, t):
         Uex = self.ufuncs["Uex"](t)
@@ -47,9 +47,11 @@ class ICINGModel:
         return [Uex, D, PN]
 
     def state_update(self, x, u, t):
+        if x.ndim == 1:
+            x = np.expand_dims(x,axis=1)
+
         # x = [G, Q, I, P1, P2, Uen, SI]
-        # G, Q, I, P1, P2, Uen, SI = x
-        G, Q, I, Uen, SI = x
+        G, Q, I, Uen, SI = x[:,0]
         # u = [Uex, D, PN]
         Uex, D, PN = u
         x_next = np.zeros_like(x)
@@ -57,23 +59,23 @@ class ICINGModel:
         # P = np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + PN
         P = PN
         # Update of G
-        x_next[0] = G + self.dt * ( -self.params["pG"]*G - SI*G*Q/(1+self.params["alphaG"]*Q) + (P + self.params["EGP"] - self.params["CNS"])/self.params["VG"] )
+        x_next[0,0] = G + self.dt * ( -self.params["pG"]*G - SI*G*Q/(1+self.params["alphaG"]*Q) + (P + self.params["EGP"] - self.params["CNS"])/self.params["VG"] )
         # Update of Q
-        x_next[1] = Q + self.dt * ( self.params["nI"]*(I-Q) - self.params["nC"]*Q/(1+self.params["alphaG"]*Q) )
+        x_next[1,0] = Q + self.dt * ( self.params["nI"]*(I-Q) - self.params["nC"]*Q/(1+self.params["alphaG"]*Q) )
         # Update of I
-        x_next[2] = I + self.dt * ( -self.params["nK"]*I - self.params["nL"]*I/(1+self.params["alphaI"]*I) - self.params["nI"]*(I-Q) + Uex/self.params["VI"] + (1-self.params["xL"])*Uen/self.params["VI"] )
+        x_next[2,0] = I + self.dt * ( -self.params["nK"]*I - self.params["nL"]*I/(1+self.params["alphaI"]*I) - self.params["nI"]*(I-Q) + Uex/self.params["VI"] + (1-self.params["xL"])*Uen/self.params["VI"] )
         # # Update of P1
         # x_next[3] = P1 + self.dt * ( -self.params["d1"]*P1 + D )
         # # Update P2
         # x_next[4] = P2 + self.dt * ( np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + self.params["d1"]*P1 )
         # Update Uen
-        x_next[3] = self.params["k1"]*np.exp(-I*self.params["k2"]/self.params["k3"]) 
+        x_next[3,0] = self.params["k1"]*np.exp(-I*self.params["k2"]/self.params["k3"]) 
         # Update SI
-        x_next[4] = SI 
+        x_next[4,0] = SI 
 
         # Add process noise
-        w = rng.multivariate_normal(mean = np.zeros_like(x), cov = np.diag(self.process_noise_var))
-
+        w = rng.multivariate_normal(mean = np.zeros(shape=len(self.process_noise_var)), cov = np.diag(self.process_noise_var))
+        w = np.expand_dims(w, axis=1)
         return x_next + w
 
     def observation(self, x, t):
