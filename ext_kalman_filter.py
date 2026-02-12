@@ -131,12 +131,12 @@ class ExtendedKalmanFilter:
                 if ti in self.t_meas:
                     sample_idx = np.argmin(np.abs(self.t_meas - ti))
                     # if sample_idx > 1: break
-                    print(f"Got measurement {sample_idx} at time {int(ti)}")
+                    # print(f"Got measurement {sample_idx} at time {int(ti)}")
                     state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, int(ti), self.G_meas[sample_idx])
 
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
-                        print(f"Predicting the next 2 hours...")
+                        # print(f"Predicting the next 2 hours...")
                         pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.Ts_meas))
                         G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
 
@@ -153,7 +153,7 @@ class ExtendedKalmanFilter:
                 state = state_next
                 noise_var = noise_var_next
 
-            print("Done")
+            # print("Done")
             return saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred
 
         def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, I_true, model):

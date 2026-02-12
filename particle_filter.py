@@ -135,7 +135,7 @@ class BootstrapParticleFilter:
         return x_mean, np.sqrt(x_var)
 
     
-    class simuluate:
+    class simulate:
         def __init__(self, t, t_meas, G_meas, filter):
             self.t = t
             self.t_meas = t_meas
@@ -160,12 +160,12 @@ class BootstrapParticleFilter:
                 if ti in self.t_meas:
                     sample_idx = np.argmin(np.abs(self.t_meas - ti))
                     # if sample_idx > 1: break
-                    print(f"Got measurement {sample_idx} at time {int(ti)}")
+                    # print(f"Got measurement {sample_idx} at time {int(ti)}")
                     # print(f"Measured {G_meas[sample_idx]}; true value {G_true[idx]}")
                     self.filter.update_particles(int(ti), yk=self.G_meas[sample_idx])
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
-                        print(f"Predicting the next 2 hours...")
+                        # print(f"Predicting the next 2 hours...")
                         pred = self.filter.predict_to_time(int(ti+self.filter.Ts_meas))
                         G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
 
@@ -182,7 +182,7 @@ class BootstrapParticleFilter:
                 I_est[idx] = mean_i[2]
                 Uen_est[idx] = mean_i[3]
                 SI_est[idx] = mean_i[-1]
-            print("done")
+            # print("done")
 
             return initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, Uen_est, SI_est, G_pred
 
