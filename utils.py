@@ -1,5 +1,6 @@
 import numpy as np   
 from scipy.stats import gaussian_kde
+from scipy.integrate import trapezoid
 
 def gen_SI_func(SI_const):
     return lambda t: SI_const
@@ -32,3 +33,7 @@ def piecewise_constant_to_callable(values, timestamps):
         idx = np.clip(idx, 0, len(values) - 1)
         return values[idx]
     return f
+
+def integral_approximate_SI(G_est, PN, Q_bar, t0, t, delta_t, pG, VG, EGP, CNS):
+    SI = (G_est[0] - G_est[-1] - pG * trapezoid(G_est, dx=delta_t) + 1/VG * trapezoid(PN, dx=delta_t) + (t-t0) * (EGP - CNS)/VG) / trapezoid(Q_bar * G_est, dx=delta_t)
+    return SI * np.ones(shape=(int((t-t0+1)/delta_t),))

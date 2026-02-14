@@ -1,3 +1,4 @@
+from utils import gen_PN_func, integral_approximate_SI
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -121,10 +122,17 @@ class ExtendedKalmanFilter:
             I_est = np.zeros_like(self.t)
             Uen_est = np.zeros_like(self.t)
             SI_est = np.zeros_like(self.t)
+            SI_fit = np.zeros_like(self.t)
             saved_state = np.zeros((len(self.t), num_states))
             saved_noise_var = np.zeros((len(self.t), num_states, num_states))
             state, noise_var = self.filter.initialize_filter()
             vars_diag = []
+            PN_func = gen_PN_func()
+            alphaG = self.filter.model.params["alphaG"]
+            pG = self.filter.model.params["pG"]
+            VG = self.filter.model.params["VG"]
+            EGP = self.filter.model.params["EGP"]
+            CNS = self.filter.model.params["CNS"]
             
             for idx, ti in enumerate(self.t):
                 # If a measurement occured at this time
@@ -133,6 +141,16 @@ class ExtendedKalmanFilter:
                     # if sample_idx > 1: break
                     # print(f"Got measurement {sample_idx} at time {int(ti)}")
                     state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, int(ti), self.G_meas[sample_idx])
+
+                    if ti != self.t_meas[0]:
+                        idxs = np.arange(idx-self.filter.Ts_meas, idx+1)
+                        t = self.t[idxs]
+                        print(t)
+                        G_est_2h = np.append(G_est[idxs], state_next[0,:])
+                        Q_est_2h = np.append(Q_est[idxs], state_next[1,:])
+                        Q_bar_est_2h = Q_est_2h / (1 + alphaG * Q_est_2h)
+                        PN_2h = [PN_func(i) for i in t]
+                        SI_fit[idxs] = integral_approximate_SI(G_est_2h, PN_2h, Q_bar_est_2h, t[0], t[-1], 1, pG, VG, EGP, CNS)
 
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
@@ -154,9 +172,9 @@ class ExtendedKalmanFilter:
                 noise_var = noise_var_next
 
             # print("Done")
-            return saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred
+            return saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, SI_fit
 
-        def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, I_true, model):
+        def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, SI_fit, I_true, model):
 
             fig, ax = model.plot_sim()
             ax[0].plot(self.t_meas, self.G_meas,  marker='o', label='BG measurements', color='k', linestyle='--')
@@ -169,13 +187,14 @@ class ExtendedKalmanFilter:
             ax[2].plot(self.t, Q_est, label='Fitted Q', color='blue', linestyle='-')
             # ax[3].plot(t_meas, Q_est, label='Fitted Q', color='blue', linestyle='--')
             ax[4].plot(self.t, SI_est, label='Fitted SI', color='red', linestyle='--')
-            err_ax = ax[4].twinx()
-            err_ax.spines["right"]#.set_position(("outward", 60))
+            ax[4].plot(self.t, SI_fit, label='Integral Fit', color='blue', linestyle='--')
+            # err_ax = ax[4].twinx()
+            # err_ax.spines["right"]#.set_position(("outward", 60))
             # err_ax.yaxis.set_ticks_position("left")
             # err_ax.yaxis.set_label_position("left")
-            err_ax.plot(self.t, np.abs((SI_est - model.last_simulation["SI"])*100/model.last_simulation["SI"]), color="purple", label="Relative error [%]")
-            err_ax.set_ylabel("Relative abs. error [%]")
-            err_ax.legend()
+            # err_ax.plot(self.t, np.abs((SI_est - model.last_simulation["SI"])*100/model.last_simulation["SI"]), color="purple", label="Relative error [%]")
+            # err_ax.set_ylabel("Relative abs. error [%]")
+            # err_ax.legend()
             for a in ax:
                 a.legend()
             plt.show()
