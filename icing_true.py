@@ -80,8 +80,10 @@ class ICINGTrue:
         self.last_simulation["PN"] = np.array([PN_func(ti) for ti in sol.t])
         self.last_simulation["D"] = np.array([D_func(ti) for ti in sol.t])
         self.last_simulation["SI"] = np.array([SI_func(ti) for ti in sol.t])
+        P = [min(self.params["d2"]*sol.y[4][idx],self.params["Pmax"]) + PN_func(ti) for idx,ti in enumerate(sol.t)]
+        P = np.asarray(P)
 
-        return [sol.y[0], sol.y[1], sol.y[2], sol.y[3], sol.y[4]] #G, I, Q, P1, P2
+        return [sol.y[0], sol.y[1], sol.y[2], sol.y[3], sol.y[4], P] #G, I, Q, P1, P2, P
     
     def plot_sim(self, simulation=None):
         if not simulation:

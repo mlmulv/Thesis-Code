@@ -34,6 +34,12 @@ def piecewise_constant_to_callable(values, timestamps):
         return values[idx]
     return f
 
-def integral_approximate_SI(G_est, PN, Q_bar, t0, t, delta_t, pG, VG, EGP, CNS):
-    SI = (G_est[0] - G_est[-1] - pG * trapezoid(G_est, dx=delta_t) + 1/VG * trapezoid(PN, dx=delta_t) + (t-t0) * (EGP - CNS)/VG) / trapezoid(Q_bar * G_est, dx=delta_t)
-    return SI * np.ones(shape=(int((t-t0+1)/delta_t),))
+def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
+    t_1 = t[-1]
+    t_0 = t[0]
+    delta_t = t[1] - t[0]
+    Qbar = Q/(1 + alphaG*Q)
+    m = (G_t1 - G_t0)/(t_1 - t_0)
+    G = [m*(ti - t_0) + G_t0 for ti in t]
+    SI = (G_t0 - G_t1 - pG*trapezoid(G,dx=delta_t) + (1/VG)*trapezoid(P+(EGP-CNS),dx=delta_t)) / trapezoid(G*Qbar,dx=delta_t)
+    return SI
