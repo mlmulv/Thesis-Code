@@ -39,7 +39,24 @@ def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
     t_0 = t[0]
     delta_t = t[1] - t[0]
     Qbar = Q/(1 + alphaG*Q)
-    m = (G_t1 - G_t0)/(t_1 - t_0)
-    G = [m*(ti - t_0) + G_t0 for ti in t]
-    SI = (G_t0 - G_t1 - pG*trapezoid(G,dx=delta_t) + (1/VG)*trapezoid(P+(EGP-CNS),dx=delta_t)) / trapezoid(G*Qbar,dx=delta_t)
-    return SI
+    m = (G_t1 - G_t0)/(t_1 - t_0) # Linear interpolation slope
+    G = [m*(ti - t_0) + G_t0 for ti in t] # Interpolate BG measurements
+    num_SI = 2 # Hourly SI with measurements of 120 minutes
+    num_lin_eq = num_SI*2 # 4 lienar equations
+    len_segment = int((t_1-t_0+1) / num_lin_eq)
+    a = np.zeros((num_lin_eq, num_SI))
+    b = np.zeros((num_lin_eq))
+
+    a[0,0] = trapezoid(G[0:len_segment]*Qbar[0:len_segment],dx=delta_t)
+    a[1,0] = trapezoid(G[len_segment:2*len_segment]*Qbar[len_segment:2*len_segment],dx=delta_t)
+    a[2,1] = trapezoid(G[2*len_segment:3*len_segment]*Qbar[2*len_segment:3*len_segment],dx=delta_t)
+    a[3,1] = trapezoid(G[3*len_segment:]*Qbar[3*len_segment:],dx=delta_t)
+
+    b[0] = G[0] - G[len_segment] - pG*trapezoid(G[0:len_segment],dx=delta_t) + trapezoid((P[0:len_segment]+EGP-CNS)/VG,dx=delta_t)
+    b[1] = G[len_segment] - G[2*len_segment] - pG*trapezoid(G[len_segment:2*len_segment],dx=delta_t) + trapezoid((P[len_segment:2*len_segment]+EGP-CNS)/VG,dx=delta_t)
+    b[2] = G[2*len_segment] - G[3*len_segment] - pG*trapezoid(G[2*len_segment:3*len_segment],dx=delta_t) + trapezoid((P[2*len_segment:3*len_segment]+EGP-CNS)/VG,dx=delta_t)
+    b[3] = G[3*len_segment] - G[-1] - pG*trapezoid(G[3*len_segment:],dx=delta_t) + trapezoid((P[3*len_segment:]+EGP-CNS)/VG,dx=delta_t)
+
+    x =  np.linalg.lstsq(a,b)[0]
+    
+    return x
