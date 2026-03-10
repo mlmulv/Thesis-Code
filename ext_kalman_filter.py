@@ -33,30 +33,48 @@ class ExtendedKalmanFilter:
         alphaI = self.model.params["alphaI"]
         VI = self.model.params["VI"]
         xL = self.model.params["xL"]
+        d1 = self.model.params["d1"]
+        d2 = self.model.params["d2"]
+        Pmax = self.model.params["Pmax"]
         k1 = self.model.params["k1"]
         k2 = self.model.params["k2"]
         k3 = self.model.params["k3"]
         G = m[0,0]
         Q = m[1,0]
         I = m[2,0]
-        SI = m[4,0]
+        P1 = m[3,0]
+        P2 = m[4,0]
+        SI = m[6,0]
 
 
         # Jacobian Matrix Calculation
+        # BG equation
         f_model_func[0,0] = 1 - dt*pG - dt*SI*Q/(1 + alphaG*Q)
         f_model_func[0,1] = -dt*SI*G / (1 + alphaG*Q)**2
-        f_model_func[0,4] = -dt*G*Q/(1 + alphaG*Q)
+        f_model_func[0,6] = -dt*G*Q/(1 + alphaG*Q)
 
+        # Q equation
         f_model_func[1,1] = 1 -dt*nI - dt*nC/(1+alphaG*Q)**2
         f_model_func[1,2] = dt*nI
 
+        # I equation
         f_model_func[2,1] = dt*nI
         f_model_func[2,2] = 1 - dt*nK - dt*nL/(1+alphaI*I)**2 - dt*nI
-        f_model_func[2,3] = dt*(1-xL)/VI
+        f_model_func[2,5] = dt*(1-xL)/VI
 
-        f_model_func[3,2] = (-k1*k2/k3)*np.exp(-I*k2/k3)
+        # P1 equation
+        f_model_func[3,3] = 1-dt*d1
 
-        f_model_func[4,4] = 1
+        # P2 equation
+        f_model_func[4,3] = dt*d1
+        if d2*P2 < Pmax:
+            f_model_func[4,4] = 1-dt*d2
+
+        # Uen Equation
+        f_model_func[5,2] = (-k1*k2/k3)*np.exp(-I*k2/k3)
+
+        # SI equation
+        f_model_func[6,6] = 1
 
         return f_model_func
 
@@ -120,6 +138,8 @@ class ExtendedKalmanFilter:
             G_pred = np.zeros_like(self.t)
             Q_est = np.zeros_like(self.t)
             I_est = np.zeros_like(self.t)
+            P1_est = np.zeros_like(self.t)
+            P2_est = np.zeros_like(self.t)
             Uen_est = np.zeros_like(self.t)
             SI_est = np.zeros_like(self.t)
             SI_fit = np.zeros_like(self.t)
@@ -149,15 +169,17 @@ class ExtendedKalmanFilter:
                 G_est[idx] = state_next[0,0]
                 Q_est[idx] = state_next[1,0]
                 I_est[idx] = state_next[2,0]
-                Uen_est[idx] = state_next[3,0]
-                SI_est[idx] = state_next[-1,0]
+                P1_est[idx] = state_next[3,0]
+                P2_est[idx] = state_next[4,0]
+                Uen_est[idx] = state_next[5,0]
+                SI_est[idx] = state_next[6,0]
                 state = state_next
                 noise_var = noise_var_next
 
             # print("Done")
-            return saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred
+            return saved_state, saved_noise_var, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred
 
-        def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, I_true, model):
+        def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred, I_true, model):
 
             fig, ax = model.plot_sim()
             ax[0].plot(self.t_meas, self.G_meas,  marker='o', label='BG measurements', color='k', linestyle='--')
@@ -169,6 +191,8 @@ class ExtendedKalmanFilter:
             ax[1].plot(self.t, Uen_est, label="Fitted Uen", color='blue', linestyle='-.')
             ax[2].plot(self.t, Q_est, label='Fitted Q', color='blue', linestyle='-')
             # ax[3].plot(t_meas, Q_est, label='Fitted Q', color='blue', linestyle='--')
+            ax[3].plot(self.t, P1_est, label='Fitted P1', color='blue', linestyle='-')
+            ax[3].plot(self.t, P2_est, label='Fitted P2', color='blue', linestyle='-.')
             ax[4].plot(self.t, SI_est, label='Fitted SI', color='red', linestyle='--')
             err_ax = ax[4].twinx()
             err_ax.spines["right"]#.set_position(("outward", 60))

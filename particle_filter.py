@@ -150,6 +150,8 @@ class BootstrapParticleFilter:
             G_pred = np.zeros_like(self.t)
             Q_est = np.zeros_like(self.t)
             I_est = np.zeros_like(self.t)
+            P1_est = np.zeros_like(self.t)
+            P2_est = np.zeros_like(self.t)
             Uen_est = np.zeros_like(self.t)
             SI_est = np.zeros_like(self.t)
             saved_particles = np.zeros((len(self.t), num_particles, num_states))
@@ -180,13 +182,15 @@ class BootstrapParticleFilter:
                 G_est[idx] = mean_i[0]
                 Q_est[idx] = mean_i[1]
                 I_est[idx] = mean_i[2]
-                Uen_est[idx] = mean_i[3]
+                P1_est[idx] = mean_i[3]
+                P2_est[idx] = mean_i[4]
+                Uen_est[idx] = mean_i[5]
                 SI_est[idx] = mean_i[-1]
             # print("done")
 
-            return initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, Uen_est, SI_est, G_pred
+            return initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred
 
-        def plot(self, initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, Uen_est, SI_est, G_pred, I_true, ts, scale, model):
+        def plot(self, initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred, I_true, ts, scale, model):
             
             sci_formatter = FuncFormatter(lambda val, _: f"{val*scale:.2f}")
             # fig, ax = plt.subplots(1,len(ts)+1, figsize=(15, 6))
@@ -226,6 +230,8 @@ class BootstrapParticleFilter:
             ax[1].plot(self.t, Uen_est, label="Fitted Uen", color='blue', linestyle='-.')
             ax[2].plot(self.t, Q_est, label='Fitted Q', color='blue', linestyle='-')
             # ax[3].plot(t_meas, Q_est, label='Fitted Q', color='blue', linestyle='--')
+            ax[3].plot(self.t, P1_est, label='Fitted P1', color='blue', linestyle='-')
+            ax[3].plot(self.t, P2_est, label='Fitted P2', color='blue', linestyle='-.')
             ax[4].plot(self.t, SI_est, label='Fitted SI', color='red', linestyle='--')
             err_ax = ax[4].twinx()
             err_ax.spines["right"]#.set_position(("outward", 60))

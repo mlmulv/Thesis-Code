@@ -51,13 +51,13 @@ class ICINGModel:
             x = np.expand_dims(x,axis=1)
 
         # x = [G, Q, I, P1, P2, Uen, SI]
-        G, Q, I, Uen, SI = x[:,0]
+        G, Q, I, P1, P2, Uen, SI = x[:,0]
         # u = [Uex, D, PN]
         Uex, D, PN = u
         x_next = np.zeros_like(x)
         # Calculate P
-        # P = np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + PN
-        P = PN
+        P = np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + PN
+        # P = PN
         # Update of G
         x_next[0,0] = G + self.dt * ( -self.params["pG"]*G - SI*G*Q/(1+self.params["alphaG"]*Q) + (P + self.params["EGP"] - self.params["CNS"])/self.params["VG"] )
         # Update of Q
@@ -65,13 +65,13 @@ class ICINGModel:
         # Update of I
         x_next[2,0] = I + self.dt * ( -self.params["nK"]*I - self.params["nL"]*I/(1+self.params["alphaI"]*I) - self.params["nI"]*(I-Q) + Uex/self.params["VI"] + (1-self.params["xL"])*Uen/self.params["VI"] )
         # # Update of P1
-        # x_next[3] = P1 + self.dt * ( -self.params["d1"]*P1 + D )
+        x_next[3,0] = P1 + self.dt * ( -self.params["d1"]*P1 + D)
         # # Update P2
-        # x_next[4] = P2 + self.dt * ( np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + self.params["d1"]*P1 )
+        x_next[4,0] = P2 + self.dt * (-np.minimum(self.params["d2"]*P2, self.params["Pmax"]) + self.params["d1"]*P1 )
         # Update Uen
-        x_next[3,0] = self.params["k1"]*np.exp(-I*self.params["k2"]/self.params["k3"]) 
+        x_next[5,0] = self.params["k1"]*np.exp(-I*self.params["k2"]/self.params["k3"]) 
         # Update SI
-        x_next[4,0] = SI 
+        x_next[6,0] = SI 
 
         # Add process noise
         w = rng.multivariate_normal(mean = np.zeros(shape=len(self.process_noise_var)), cov = np.diag(self.process_noise_var))

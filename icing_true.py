@@ -120,7 +120,7 @@ class ICINGTrue:
 
         for a in ax:
             a.grid(True)
-            #a.legend(loc='best')
+            # a.legend(loc='best')
         
         # Remove hspace
         # fig.subplots_adjust(hspace=0)
