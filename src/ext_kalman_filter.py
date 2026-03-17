@@ -1,14 +1,13 @@
-from utils import gen_PN_func, integral_approximate_SI
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 
 class ExtendedKalmanFilter:
-    def __init__(self, num_states, model, Ts_meas):
+    def __init__(self, num_states, model, ts_meas):
         # Parameters
         self.num_states = num_states
         self.model = model
-        self.Ts_meas = Ts_meas
+        self.ts_meas = ts_meas
 
     def initialize_filter(self):
         state = self.model.initial_state
@@ -158,8 +157,8 @@ class ExtendedKalmanFilter:
                     # Predict 2 hours ahead (if not last measurement)
                     if ti != self.t_meas[-1]:
                         # print(f"Predicting the next 2 hours...")
-                        pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.Ts_meas))
-                        G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
+                        pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.ts_meas))
+                        G_pred[idx:idx+self.filter.ts_meas] = pred[:,0]
 
                 # If no measurement
                 else:
@@ -205,7 +204,3 @@ class ExtendedKalmanFilter:
                 a.legend()
             plt.show()
             fig.tight_layout()
-
-
-
-

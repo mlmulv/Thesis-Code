@@ -1,4 +1,4 @@
-from icing_true import ICINGTrue
+import icing_true
 import numpy as np
 rng = np.random.default_rng(seed=42)
 
@@ -30,7 +30,7 @@ class patient_cohort:
 
     def patient_data(self, uex_func, PN_func, D_func, SI_func):
         init_states = self.initial_states()
-        icing_model = ICINGTrue()
+        icing_model = icing_true.ICINGTrue()
         t_start = self.t[0]
         t_end = self.t[-1]
         data = []

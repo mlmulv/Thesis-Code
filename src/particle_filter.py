@@ -3,7 +3,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from copy import deepcopy
-from utils import plot_weighted_kde
+import utils 
 rng = np.random.default_rng()
 
 class BootstrapParticleFilter:
@@ -210,13 +210,13 @@ class BootstrapParticleFilter:
                 ax[0,i].set_title(ti)
                 ax[0,0].set_ylabel("Glucose")
 
-                plot_weighted_kde(ax[1,i], saved_particles[ti,:,-1], saved_weights[ti], bw=target_kde_std[0], color="C0")
+                utils.plot_weighted_kde(ax[1,i], saved_particles[ti,:,-1], saved_weights[ti], bw=target_kde_std[0], color="C0")
                 # ax[1,i].stem(saved_particles[ti,:,-1], saved_weights[ti], basefmt="k")
                 ax[1,0].set_ylabel(r"SI")
-            plot_weighted_kde(ax[0,-1], initial_particles[:,0], initial_weights, bw=target_kde_std[0], color="C0")
+            utils.plot_weighted_kde(ax[0,-1], initial_particles[:,0], initial_weights, bw=target_kde_std[0], color="C0")
             # ax[0,-1].stem(initial_particles[:,0], initial_weights, basefmt="k")
             ax[0,-1].set_title("Initial")
-            plot_weighted_kde(ax[1,-1], initial_particles[:,-1], initial_weights, bw=target_kde_std[0], color="C0")
+            utils.plot_weighted_kde(ax[1,-1], initial_particles[:,-1], initial_weights, bw=target_kde_std[0], color="C0")
             # ax[1,-1].stem(initial_particles[:,-1], initial_weights, basefmt="k")
             fig.tight_layout()
 

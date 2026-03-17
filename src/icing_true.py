@@ -1,6 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
+from scipy import integrate
 
 # class ICING model
 class ICINGTrue:
@@ -70,7 +70,7 @@ class ICINGTrue:
     def simulate(self, y0, t_start, t_end, t_eval, uex_func, PN_func, D_func, SI_func):
 
         # Simulate the ODEs with high precision using RK45 
-        sol = solve_ivp(self.__icing_odes, (t_start, t_end), y0, args=(uex_func, PN_func, D_func, SI_func), t_eval=t_eval, rtol=1e-6, atol=1e-9)
+        sol = integrate.solve_ivp(self.__icing_odes, (t_start, t_end), y0, args=(uex_func, PN_func, D_func, SI_func), t_eval=t_eval, rtol=1e-6, atol=1e-9)
         
         # Save this for later plotting
         self.last_simulation = {"t": sol.t, "G": sol.y[0], "I": sol.y[1], "Q": sol.y[2], "P1": sol.y[3], "P2": sol.y[4]}

@@ -2,8 +2,8 @@ import numpy as np
 from scipy.stats import gaussian_kde
 from scipy.integrate import trapezoid
 
-def gen_SI_func():
-    return lambda t: 2e-4
+def gen_SI_func(SI_const=2e-4):
+    return lambda t: SI_const
 
 def gen_uex_func(type):
     if type == "exp":
@@ -12,8 +12,8 @@ def gen_uex_func(type):
         func = lambda t: 65
     return func
          
-def gen_D_func():
-    return lambda t: 0.24
+def gen_D_func(D_const=0.24):
+    return lambda t: D_const
 
 def gen_PN_func():
     return lambda t: np.exp(-(np.log(2)/(5*60))*(t % (5*60)))
