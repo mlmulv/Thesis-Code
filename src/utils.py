@@ -5,7 +5,7 @@ from scipy.integrate import trapezoid
 def gen_SI_func(SI_const=2e-4):
     return lambda t: SI_const
 
-def gen_uex_func(type):
+def gen_uex_func(type="exp"):
     if type == "exp":
         func = lambda t: 75*np.exp(-(np.log(2)/(5*60))*((t+120) % (5*60)))
     elif type == "constant":
@@ -62,4 +62,18 @@ def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
     b[3] = G[3*len_segment] - G[-1] - pG*trapezoid(G[3*len_segment:],dx=delta_t) + trapezoid((P[3*len_segment:]+EGP-CNS)/VG,dx=delta_t)
 
     SI =  np.linalg.lstsq(a,b)[0] 
+    return SI
+
+def integral_approximate_SI_seq(pG, alphaG, EGP, CNS, VG, t, t_meas, Ts_meas, G_meas, Q_true, P_true):
+    SI = []
+    for idx, ti in enumerate(t_meas[:-1]):
+        t_mask = (t >= t[Ts_meas*idx]) & (t < t[Ts_meas*(idx+1)])
+        times = t[t_mask]
+        Q = Q_true[t_mask]
+        P = P_true[t_mask]
+        G_t1 = G_meas[idx+1]
+        G_t0 = G_meas[idx]
+        SI.append(integral_approximate_SI(G_t1, G_t0, Q, P, times, pG, alphaG, EGP, CNS, VG))
+
+    SI = np.reshape(SI, shape=-1)
     return SI
