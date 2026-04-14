@@ -44,7 +44,7 @@ def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
     delta_t = t[1] - t[0]
     Qbar = Q/(1 + alphaG*Q)
     m = (G_t1 - G_t0)/(t_1 - t_0) # Linear interpolation slope
-    G = [m*(ti - t_0) + G_t0 for ti in t] # Interpolate BG measurements
+    G = np.asarray([m*(ti - t_0) + G_t0 for ti in t]) # Interpolate BG measurements
     num_SI = 2 # Hourly SI with measurements of 120 minutes
     num_lin_eq = num_SI*2 # 4 linear equations
     len_segment = int((t_1-t_0) / num_lin_eq)
@@ -62,6 +62,7 @@ def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
     b[3] = G[3*len_segment] - G[-1] - pG*trapezoid(G[3*len_segment:],dx=delta_t) + trapezoid((P[3*len_segment:]+EGP-CNS)/VG,dx=delta_t)
 
     SI =  np.linalg.lstsq(a,b)[0] 
+
     return SI
 
 def integral_approximate_SI_seq(pG, alphaG, EGP, CNS, VG, t, t_meas, Ts_meas, G_meas, Q_true, P_true):

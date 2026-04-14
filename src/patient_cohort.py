@@ -14,12 +14,12 @@ class PatientCohort:
 
         # Assigned variables
         self.t = np.arange(0, sim_hours*60+1, dt)
-        t_meas = np.arange(0, sim_hours*60+1, dtmeas)
-        self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in t_meas]
-        self.initial_Q = 15
-        self.initial_I = 15
-        self.initial_P1 = 0
-        self.initial_P2 = 0
+        self.t_meas = np.arange(0, sim_hours*60+1, dtmeas)
+        self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in self.t_meas]
+        self.initial_Q = 15.0
+        self.initial_I = 15.0
+        self.initial_P1 = 0.0
+        self.initial_P2 = 0.0
 
     def gen_initial_BG(self):
         mu = np.log(self.BG_params[0]**2 / np.sqrt(self.BG_params[1]**2 + self.BG_params[0]**2))
