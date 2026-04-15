@@ -8,6 +8,7 @@ class ExtendedKalmanFilter:
         self.num_states = num_states
         self.model = model
         self.ts_meas = ts_meas
+        self.SI_augment = model.SI_augment
 
     def initialize_filter(self):
         state = self.model.initial_state
@@ -19,7 +20,7 @@ class ExtendedKalmanFilter:
         self.R = np.array([[self.model.measurement_noise_var]])
         return state, noise_var
 
-    def calc_f_model_func(self, m):
+    def calc_f_model_func(self, m, curr_SI):
         # Variable Initialization
         f_model_func = np.zeros((self.num_states, self.num_states))
         dt = self.model.dt
@@ -43,14 +44,18 @@ class ExtendedKalmanFilter:
         I = m[2,0]
         P1 = m[3,0]
         P2 = m[4,0]
-        SI = m[6,0]
+        if self.SI_augment:
+            SI = m[6,0]
+        else:
+            SI = curr_SI
 
 
         # Jacobian Matrix Calculation
         # BG equation
         f_model_func[0,0] = 1 - dt*pG - dt*SI*Q/(1 + alphaG*Q)
         f_model_func[0,1] = -dt*SI*G / (1 + alphaG*Q)**2
-        f_model_func[0,6] = -dt*G*Q/(1 + alphaG*Q)
+        if self.SI_augment:
+            f_model_func[0,6] = -dt*G*Q/(1 + alphaG*Q)
 
         # Q equation
         f_model_func[1,1] = 1 -dt*nI - dt*nC/(1+alphaG*Q)**2
@@ -72,8 +77,9 @@ class ExtendedKalmanFilter:
         # Uen Equation
         f_model_func[5,2] = (-k1*k2/k3)*np.exp(-I*k2/k3)
 
-        # SI equation
-        f_model_func[6,6] = 1
+        if self.SI_augment:
+            # SI equation
+            f_model_func[6,6] = 1
 
         return f_model_func
 
@@ -83,37 +89,40 @@ class ExtendedKalmanFilter:
         return calc_h_model_func
 
 
-    def filter_predict(self, state_update, noise_var_update, t):
+    def filter_predict(self, state_update, noise_var_update, t, curr_SI):
         u_vec = self.model.get_inputs(t) 
-        f_model_func = self.calc_f_model_func(state_update)
-        state_predict = self.model.state_update(state_update, u_vec, t)
+        f_model_func = self.calc_f_model_func(state_update, curr_SI)
+        state_predict = self.model.state_update(state_update, u_vec, t, curr_SI)
         noise_var_predict = np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T)) + self.Q
         return state_predict, noise_var_predict
 
-    def filter_update(self, state_predict, noise_var_predict, y):
+    def filter_update(self, state_predict, noise_var_predict, y, output_params=False):
         S = np.matmul(self.h_model_func, np.matmul(noise_var_predict, self.h_model_func.T)) + self.R
         K = np.matmul(noise_var_predict, np.matmul(self.h_model_func.T, np.linalg.inv(S)))
         v = np.array([y - state_predict[0]])
         state_update = state_predict + np.matmul(K, v)
         noise_var_update = noise_var_predict - np.matmul(K, np.matmul(S,K.T))
-        return state_update, noise_var_update
+        if not output_params:
+            return state_update, noise_var_update
+        else:
+            return state_update, noise_var_update, S, v
 
-    def predict_to_time(self, state, noise_var, t):
+    def predict_to_time(self, state, noise_var, t, curr_SI=None):
         # Run prediction from t_last_measurement to t
         predictions = np.zeros((int(t-self.t_last_measurement), self.num_states))
         step = 0
 
         for ti in range(self.t_last_measurement, t):
-            state_next, noise_var_next = self.filter_predict(state, noise_var, ti)
+            state_next, noise_var_next = self.filter_predict(state, noise_var, ti, curr_SI)
             predictions[step] = state_next[:,0]
             state = state_next
             noise_var = noise_var_next
             step += 1
         return predictions
 
-    def filter_iteration(self, state, noise_var, t, yk=None):
+    def filter_iteration(self, state, noise_var, t, yk=None, curr_SI=None):
         # Make prediction
-        state_next, noise_var_next = self.filter_predict(state, noise_var, t)
+        state_next, noise_var_next = self.filter_predict(state, noise_var, t, curr_SI)
 
         # if there is a measurement, update filter
         if yk is not None:
