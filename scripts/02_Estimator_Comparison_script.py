@@ -6,6 +6,8 @@ import scipy
 import os
 import sys
 from multiprocessing import Pool, cpu_count
+import warnings
+warnings.filterwarnings("error", category=RuntimeWarning)
 
 sys.path.append(os.path.abspath(os.path.join('..', 'src')))
 import ext_kalman_filter
@@ -46,7 +48,7 @@ def main():
     BG_logsigma = 1.3
     num_patients = 1
     sim_hours = 60
-    dt = 1
+    dt = 100
     dtmeas = 120
     meas_noise_std = 0.25
     PatientCohort = patient_cohort.PatientCohort(num_patients=num_patients, sim_hours=sim_hours, dt=dt, dtmeas=dtmeas, meas_noise_std=meas_noise_std, BG_params=[BG_logmu, BG_logsigma])
@@ -70,7 +72,7 @@ def main():
         time_train = np.load("variables/time_arr_02.npy")
         print("Loaded variables from previous run")
     except Exception:
-        num_particles = np.asarray([1000]) 
+        num_particles = np.asarray([100, 200, 300, 400, 500, 1000, 1500, 3000, 5000]) 
         num_filters = len(num_particles) + 1 # 1 EKF filter and the number of variations of PF with the assigned number of particles
         t = np.arange(0, sim_hours*60+1, dt)
         t_meas = np.arange(0, sim_hours*60+1, dtmeas)
