@@ -77,4 +77,7 @@ def main():
 
         print("Done")
         np.save("variables/time_arr_02", time_train)
-        np.save("variables/mse_arr_02", mse_est)   
+        np.save("variables/mse_arr_02", mse_est)  
+
+if __name__ == "__main__":
+    main() 
