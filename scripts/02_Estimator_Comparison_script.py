@@ -46,9 +46,9 @@ def worker(task):
 def main():
     BG_logmu = 7.6
     BG_logsigma = 1.3
-    num_patients = 1
+    num_patients = 100
     sim_hours = 60
-    dt = 100
+    dt = 1
     dtmeas = 120
     meas_noise_std = 0.25
     PatientCohort = patient_cohort.PatientCohort(num_patients=num_patients, sim_hours=sim_hours, dt=dt, dtmeas=dtmeas, meas_noise_std=meas_noise_std, BG_params=[BG_logmu, BG_logsigma])
