@@ -16,8 +16,8 @@ class PatientCohort:
         self.t = np.arange(0, sim_hours*60+1, dt)
         self.t_meas = np.arange(0, sim_hours*60+1, dtmeas)
         self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in self.t_meas]
-        self.initial_Q = 15.0
-        self.initial_I = 15.0
+        self.Q = 15.0
+        self.I = 15.0
         self.initial_P1 = 0.0
         self.initial_P2 = 0.0
 
@@ -28,7 +28,7 @@ class PatientCohort:
 
     def initial_states(self):
         initial_BG = self.gen_initial_BG()
-        return np.asarray([[BG, self.initial_Q, self.initial_I, self.initial_P1, self.initial_P2] for BG in initial_BG]).reshape(-1,5)
+        return np.asarray([[initial_BG[i], self.Q, self.I, self.initial_P1, self.initial_P2] for i in range(self.num_patients)]).reshape(-1,5)
 
     def patient_data(self, uex_func, PN_func, D_func, SI_func):
         init_states = self.initial_states()
@@ -39,7 +39,7 @@ class PatientCohort:
         for i in range(self.num_patients):
             y0 = init_states[i,:]
             BG, Q, I, P1, P2, P = icing_model.simulate(y0, t_start, t_end, self.t, uex_func, PN_func, D_func, SI_func)
-            BG_meas = BG[self.sample_indices] + rng.normal(0, self.meas_noise_std, size=len(self.sample_indices))
+            BG_meas = BG[self.sample_indices] + rng.normal(0.0, self.meas_noise_std, size=len(self.sample_indices))
             patient_info = {
                 'patient_id': f'Patient_{i}',
                 'y0': y0,
