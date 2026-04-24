@@ -166,10 +166,10 @@ class BootstrapParticleFilter:
                     # print(f"Measured {G_meas[sample_idx]}; true value {G_true[idx]}")
                     self.filter.update_particles(int(ti), yk=self.G_meas[sample_idx])
                     # Predict 2 hours ahead (if not last measurement)
-                    if ti != self.t_meas[-1]:
-                        # print(f"Predicting the next 2 hours...")
-                        pred = self.filter.predict_to_time(int(ti+self.filter.Ts_meas))
-                        G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
+                    # if ti != self.t_meas[-1]:
+                    #     # print(f"Predicting the next 2 hours...")
+                    #     pred = self.filter.predict_to_time(int(ti+self.filter.Ts_meas))
+                    #     G_pred[idx:idx+self.filter.Ts_meas] = pred[:,0]
 
                 # else no measurement, so just update particles
                 else: 

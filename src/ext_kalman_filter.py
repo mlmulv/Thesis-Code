@@ -163,11 +163,11 @@ class ExtendedKalmanFilter:
                     # print(f"Got measurement {sample_idx} at time {int(ti)}")
                     state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, int(ti), self.G_meas[sample_idx])
 
-                    # Predict 2 hours ahead (if not last measurement)
-                    if ti != self.t_meas[-1]:
-                        # print(f"Predicting the next 2 hours...")
-                        pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.ts_meas))
-                        G_pred[idx:idx+self.filter.ts_meas] = pred[:,0]
+                    # # Predict 2 hours ahead (if not last measurement)
+                    # if ti != self.t_meas[-1]:
+                    #     # print(f"Predicting the next 2 hours...")
+                    #     pred = self.filter.predict_to_time(state_next, noise_var_next, t = int(ti+self.filter.ts_meas))
+                    #     G_pred[idx:idx+self.filter.ts_meas] = pred[:,0]
 
                 # If no measurement
                 else:

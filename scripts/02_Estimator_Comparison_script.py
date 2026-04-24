@@ -44,34 +44,34 @@ def worker(task):
     return time_elapsed, G_est
 
 def main():
-    BG_logmu = 7.6
-    BG_logsigma = 1.3
-    num_patients = 100
-    sim_hours = 60
-    dt = 1
-    dtmeas = 120
-    meas_noise_std = 0.25
-    PatientCohort = patient_cohort.PatientCohort(num_patients=num_patients, sim_hours=sim_hours, dt=dt, dtmeas=dtmeas, meas_noise_std=meas_noise_std, BG_params=[BG_logmu, BG_logsigma])
-    uex_func = utils.gen_uex_func()
-    PN_func = utils.gen_PN_func()
-    D_func = utils.gen_D_func()
-    SI_func = utils.gen_SI_func()
-    patient_data = PatientCohort.patient_data(uex_func=uex_func, PN_func=PN_func, D_func=D_func, SI_func=SI_func)
-
-    y0 = [BG_logmu, 15, 15, 0, 0]
-    ICINGTrue = icing_true.ICINGTrue()
-    initial_state = np.append(y0, [ICINGTrue.params['k1']*np.exp(-y0[2]*ICINGTrue.params['k2']/ICINGTrue.params["k3"]), 2.1e-4])
-    initial_state = np.expand_dims(initial_state, axis=1)
-    num_states = len(initial_state)
-    process_noises = 1e-4/(dtmeas)*np.ones((len(initial_state),))
-    process_noises[-1] = (1e-6)**2/(dtmeas)
-
-
     try:
         error_est = np.load("variables/error_arr_02.npy")
         time_train = np.load("variables/time_arr_02.npy")
-        print("Loaded variables from previous run")
+        print("Previous run variables already exist")
+        
     except Exception:
+        BG_logmu = 7.6
+        BG_logsigma = 1.3
+        num_patients = 100
+        sim_hours = 60
+        dt = 1
+        dtmeas = 120
+        meas_noise_std = 0.25
+        PatientCohort = patient_cohort.PatientCohort(num_patients=num_patients, sim_hours=sim_hours, dt=dt, dtmeas=dtmeas, meas_noise_std=meas_noise_std, BG_params=[BG_logmu, BG_logsigma])
+        uex_func = utils.gen_uex_func()
+        PN_func = utils.gen_PN_func()
+        D_func = utils.gen_D_func()
+        SI_func = utils.gen_SI_func()
+        patient_data = PatientCohort.patient_data(uex_func=uex_func, PN_func=PN_func, D_func=D_func, SI_func=SI_func)
+
+        y0 = [BG_logmu, 15, 15, 0, 0]
+        ICINGTrue = icing_true.ICINGTrue()
+        initial_state = np.append(y0, [ICINGTrue.params['k1']*np.exp(-y0[2]*ICINGTrue.params['k2']/ICINGTrue.params["k3"]), 2.1e-4])
+        initial_state = np.expand_dims(initial_state, axis=1)
+        num_states = len(initial_state)
+        process_noises = 1e-4/(dtmeas)*np.ones((len(initial_state),))
+        process_noises[-1] = (1e-6)**2/(dtmeas)
+
         num_particles = np.asarray([100, 200, 300, 400, 500, 1000, 1500, 3000, 5000]) 
         num_filters = len(num_particles) + 1 # 1 EKF filter and the number of variations of PF with the assigned number of particles
         t = np.arange(0, sim_hours*60+1, dt)
