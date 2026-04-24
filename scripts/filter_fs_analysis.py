@@ -22,7 +22,7 @@ def worker(task):
     uex_func = utils.gen_uex_func()
     PN_func = utils.gen_PN_func()
     D_func = utils.gen_D_func()
-    SI_func = utils.gen_SI_func()
+    #SI_func = utils.gen_SI_func()
     input_functions = {"D": D_func, "PN": PN_func, "Uex": uex_func}
     filter_type, num_particles, num_states, dt, dtmeas, t, t_meas, G_meas, initial_state, process_noise_vars, meas_noise_std = task
     model = icing_model.ICINGModel(params=None,dt=dt, initial_state=initial_state, process_noise_vars=process_noise_vars, measurement_noise_var=meas_noise_std**2, u_funcs=input_functions)
@@ -51,8 +51,8 @@ def main():
 
     except Exception:
         BG_logmu = 7.6
-        BG_logsigma = 1.3
-        y0 = [BG_logmu, 15, 15, 0, 0]
+        BG_logsigma = 0.8
+        y0 = [BG_logmu, 15.0, 15.0, 0, 0]
 
         num_patients = 1
         uex_func = utils.gen_uex_func()
@@ -74,7 +74,7 @@ def main():
         dts = np.asarray([1, 5, 10])
         meas_noise_std = 0.25
 
-        num_particles = np.asarray([100, 200, 300, 400, 500, 1000, 1500, 3000, 5000])
+        num_particles = np.asarray([100])#, 200, 300, 400, 500, 1000, 1500, 3000, 5000])
         num_filters = len(num_particles) + 1
 
         G_ests = []
@@ -100,6 +100,7 @@ def main():
                 print(f"Patient {i+1} / {num_patients}")
                 G_true = patient_data[i]['BG']
                 G_meas = patient_data[i]['BG_meas']
+                print(G_meas)
                 tasks = []
                 for j in range(num_filters):
                     if j != 0:
@@ -117,8 +118,8 @@ def main():
 
             G_ests.append(G_est)
             G_errors.append(G_error)
+            
             print(f"{(time.time() - time_start)/60:.3f} mins have elapsed") 
-
 
         with open('variables/fs_G_errors.pkl', 'wb') as f:
             pickle.dump(G_errors, f, protocol=pickle.HIGHEST_PROTOCOL)
