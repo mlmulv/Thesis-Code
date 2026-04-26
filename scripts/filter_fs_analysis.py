@@ -64,7 +64,7 @@ def main():
         BG_logsigma = 0.8
         y0 = [BG_logmu, 15.0, 15.0, 0, 0]
 
-        num_patients = 100
+        num_patients = 10
         uex_func = utils.gen_uex_func()
         PN_func = utils.gen_PN_func()
         D_func = utils.gen_D_func()
@@ -102,7 +102,7 @@ def main():
             Cohorts.append(patient_data)
             G_error = np.zeros((num_patients, num_filters, len(t)))
             G_est = np.zeros_like(G_error)
-            filter_time_run = np.zeros((num_filters,))
+            filter_time_run = np.zeros((num_patients, num_filters))
 
             for i in range(num_patients):
                 print(f"Patient {i+1} / {num_patients}")
@@ -123,7 +123,7 @@ def main():
                     G_error[i,j,:] = (G_est_filter - G_true)**2
                     print(np.mean(G_error[i,j,:]))
                     G_est[i,j,:] = G_est_filter
-                    filter_time_run[j] = time_run
+                    filter_time_run[i,j] = times_run
 
             G_ests.append(G_est)
             G_errors.append(G_error)
