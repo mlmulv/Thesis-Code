@@ -121,13 +121,11 @@ def main():
 
                 for j, (G_est_filter, time_run) in enumerate(results):        
                     G_error[i,j,:] = (G_est_filter - G_true)**2
-                    print(np.mean(G_error[i,j,:]))
                     G_est[i,j,:] = G_est_filter
-                    filter_time_run[i,j] = times_run
+                    filter_time_run[i,j] = time_run
 
             G_ests.append(G_est)
             G_errors.append(G_error)
-            print(filter_time_run)
             filters_time_run.append(filter_time_run)
 
             print(f"{(time.time() - time_start)/60:.3f} mins have elapsed") 
