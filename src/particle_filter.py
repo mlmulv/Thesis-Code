@@ -187,7 +187,8 @@ class BootstrapParticleFilter:
                 Uen_est[idx] = mean_i[5]
                 SI_est[idx] = mean_i[-1]
             # print("done")
-
+            
+            # UNEXPECTED BEHAVIOUR THAT ESTIMATES ARE AN INTEGER. FOR NOW ONY USE SAVED_PARTICLES AND SAVED_PARTICLES FOR STATE CALCULATIONS
             return initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred
 
         def plot(self, initial_particles, initial_weights, saved_particles, saved_weights, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred, I_true, ts, scale, model):

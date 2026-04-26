@@ -185,6 +185,8 @@ class ExtendedKalmanFilter:
                 noise_var = noise_var_next
 
             # print("Done")
+            
+            # UNEXPECTED BEHAVIOUR THAT ESTIMATES ARE AN INTEGER. FOR NOW ONY USE SAVED_STATE AND SAVED_NOISE_VAR FOR STATE CALCULATIONS
             return saved_state, saved_noise_var, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred
 
         def plot(self, saved_state, saved_noise_var, G_est, Q_est, I_est, P1_est, P2_est, Uen_est, SI_est, G_pred, I_true, model):
