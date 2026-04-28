@@ -12,8 +12,7 @@ class ExtendedKalmanFilter:
 
     def initialize_filter(self):
         state = self.model.initial_state
-        noise_vars = np.ones(len(state))
-        noise_vars[-1] = (1e-5)**2
+        noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (0.9*1.8e-4)**2])
         noise_var = np.diag(noise_vars)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
@@ -194,7 +193,7 @@ class ExtendedKalmanFilter:
             fig, ax = model.plot_sim()
             ax[0].plot(self.t_meas, self.G_meas,  marker='o', label='BG measurements', color='k', linestyle='--')
             ax[0].plot(self.t, G_est, label='Fitted BG', color='blue', linestyle='--')
-            ax[0].plot(self.t[1:], G_pred[:-1], label="2 hour ahead prediction", color="green")
+            # ax[0].plot(self.t[1:], G_pred[:-1], label="2 hour ahead prediction", color="green")
             uen_true = model.params["k1"]*np.exp(I_true*model.params["k2"]/model.params["k3"])
             ax[1].plot(self.t, I_est, label='Fitted I', color='blue', linestyle='-')
             ax[1].plot(self.t, uen_true, label="Endogenous Insulin", color="orange", linestyle="-.")
