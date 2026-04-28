@@ -224,7 +224,7 @@ class BootstrapParticleFilter:
             fig, ax = model.plot_sim()
             ax[0].plot(self.t_meas, self.G_meas,  marker='o', label='BG measurements', color='k', linestyle='--')
             ax[0].plot(self.t, G_est, label='Fitted BG', color='blue', linestyle='--')
-            ax[0].plot(self.t[1:], G_pred[:-1], label="2 hour ahead prediction", color="green")
+            # ax[0].plot(self.t[1:], G_pred[:-1], label="2 hour ahead prediction", color="green")
             uen_true = model.params["k1"]*np.exp(I_true*model.params["k2"]/model.params["k3"])
             ax[1].plot(self.t, I_est, label='Fitted I', color='blue', linestyle='-')
             ax[1].plot(self.t, uen_true, label="Endogenous Insulin", color="orange", linestyle="-.")

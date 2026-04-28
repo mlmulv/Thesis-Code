@@ -38,9 +38,8 @@ class ICINGModel:
         self.SI_augment = SI_augment
 
     def draw_initial_state(self):
-        noise_vars = np.ones((len(self.initial_state),))
-        if self.SI_augment:
-            noise_vars[-1] = (1e-5)**2
+        noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (0.9*1.8e-4)**2])
+        # FIX IF NO STATE AUGMENT
         return rng.multivariate_normal(mean=self.initial_state[:,0], cov=np.diag(noise_vars))
     
     def get_inputs(self, t):
