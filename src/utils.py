@@ -7,12 +7,12 @@ def gen_SI_func(SI_const=2e-4):
 
 def gen_uex_func(type="exp"):
     if type == "exp":
-        func = lambda t: 120*np.exp(-(np.log(2)/(5*60))*((t+120) % (5*60)))
+        func = lambda t: 140*np.exp(-(np.log(2)/(5*60))*((t+120) % (5*60)))
     elif type == "constant":
         func = lambda t: 65
     return func
          
-def gen_D_func(D_const=0.24):
+def gen_D_func(D_const=0.30):
     return lambda t: D_const
 
 def gen_PN_func():
