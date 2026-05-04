@@ -12,7 +12,10 @@ class ExtendedKalmanFilter:
 
     def initialize_filter(self):
         state = self.model.initial_state
-        noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (0.9*1.8e-4)**2])
+        if self.model.SI_augment:
+            noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (0.9*1.8e-4)**2])
+        else:
+            noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2])
         noise_var = np.diag(noise_vars)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
@@ -133,11 +136,12 @@ class ExtendedKalmanFilter:
         
 
     class simulate:
-        def __init__(self, t, t_meas, G_meas, filter):
+        def __init__(self, t, t_meas, G_meas, filter, SI_fixed = None):
             self.t = t
             self.t_meas = t_meas
             self.G_meas = G_meas
             self.filter = filter
+            self.SI_fixed = SI_fixed
 
         def run(self):
             num_states = self.filter.num_states
@@ -149,10 +153,10 @@ class ExtendedKalmanFilter:
             P2_est = np.zeros_like(self.t)
             Uen_est = np.zeros_like(self.t)
             SI_est = np.zeros_like(self.t)
-            SI_fit = np.zeros_like(self.t)
             saved_state = np.zeros((len(self.t), num_states))
             saved_noise_var = np.zeros((len(self.t), num_states, num_states))
             state, noise_var = self.filter.initialize_filter()
+
 
             for idx, ti in enumerate(self.t):
                 # If a measurement occured at this time
@@ -160,7 +164,7 @@ class ExtendedKalmanFilter:
                     sample_idx = np.argmin(np.abs(self.t_meas - ti))
                     # if sample_idx > 1: break
                     # print(f"Got measurement {sample_idx} at time {int(ti)}")
-                    state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, int(ti), self.G_meas[sample_idx])
+                    state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, int(ti), self.G_meas[sample_idx], curr_SI=self.SI_fixed)
 
                     # # Predict 2 hours ahead (if not last measurement)
                     # if ti != self.t_meas[-1]:
@@ -170,7 +174,7 @@ class ExtendedKalmanFilter:
 
                 # If no measurement
                 else:
-                    state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, ti)
+                    state_next, noise_var_next = self.filter.filter_iteration(state, noise_var, ti, curr_SI=self.SI_fixed)
 
                 saved_state[idx], saved_noise_var[idx] = state_next[:,0], noise_var_next[:,0]
                 G_est[idx] = state_next[0,0]
@@ -179,7 +183,8 @@ class ExtendedKalmanFilter:
                 P1_est[idx] = state_next[3,0]
                 P2_est[idx] = state_next[4,0]
                 Uen_est[idx] = state_next[5,0]
-                SI_est[idx] = state_next[6,0]
+                if self.SI_fixed is None:
+                    SI_est[idx] = state_next[6,0]
                 state = state_next
                 noise_var = noise_var_next
 

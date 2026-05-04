@@ -93,11 +93,11 @@ class BootstrapParticleFilter:
 
     
     
-    def update_particles(self, t, yk=None):
+    def update_particles(self, t, yk=None, curr_SI=None):
         # Propagate particles through model for all times until this sample
         u_vec = self.model.get_inputs(t)
         for i in range(self.num_particles):
-            self.particles[i,:] = self.model.state_update(self.particles[i,:], u_vec, t)[:,0]
+            self.particles[i,:] = self.model.state_update(self.particles[i,:], u_vec, t, curr_SI=curr_SI)[:,0]
 
         if yk: #measurement was included => update weights
             self.t_last_measurement = t
@@ -136,11 +136,12 @@ class BootstrapParticleFilter:
 
     
     class simulate:
-        def __init__(self, t, t_meas, G_meas, filter):
+        def __init__(self, t, t_meas, G_meas, filter, SI_fixed=None):
             self.t = t
             self.t_meas = t_meas
             self.G_meas = G_meas
             self.filter = filter
+            self.SI_fixed = SI_fixed
 
         def run(self):
             num_particles = self.filter.num_particles
@@ -164,7 +165,7 @@ class BootstrapParticleFilter:
                     # if sample_idx > 1: break
                     # print(f"Got measurement {sample_idx} at time {int(ti)}")
                     # print(f"Measured {G_meas[sample_idx]}; true value {G_true[idx]}")
-                    self.filter.update_particles(int(ti), yk=self.G_meas[sample_idx])
+                    self.filter.update_particles(int(ti), yk=self.G_meas[sample_idx], curr_SI=self.SI_fixed)
                     # Predict 2 hours ahead (if not last measurement)
                     # if ti != self.t_meas[-1]:
                     #     # print(f"Predicting the next 2 hours...")
@@ -173,7 +174,7 @@ class BootstrapParticleFilter:
 
                 # else no measurement, so just update particles
                 else: 
-                    self.filter.update_particles(int(ti))
+                    self.filter.update_particles(int(ti), curr_SI=self.SI_fixed)
 
                 # Get stats for the current filter
                 mean_i, var_i = self.filter.filter()
@@ -185,7 +186,8 @@ class BootstrapParticleFilter:
                 P1_est[idx] = mean_i[3]
                 P2_est[idx] = mean_i[4]
                 Uen_est[idx] = mean_i[5]
-                SI_est[idx] = mean_i[-1]
+                if self.SI_fixed is None:
+                    SI_est[idx] = mean_i[-1]
             # print("done")
             
             # UNEXPECTED BEHAVIOUR THAT ESTIMATES ARE AN INTEGER. FOR NOW ONY USE SAVED_PARTICLES AND SAVED_PARTICLES FOR STATE CALCULATIONS
