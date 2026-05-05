@@ -55,7 +55,7 @@ def main():
     except Exception:
         BG_logmu = 7.6
         BG_logsigma = 1.3
-        num_patients = 1
+        num_patients = 100
         sim_hours = 60
         dt = 1
         dtmeas = 120
