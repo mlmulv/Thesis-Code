@@ -13,7 +13,7 @@ class ExtendedKalmanFilter:
     def initialize_filter(self):
         state = self.model.initial_state
         if self.model.SI_augment:
-            noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (0.9*1.8e-4)**2])
+            noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2, (1e-5)**2])
         else:
             noise_vars = np.asarray([(0.9*7.5)**2, (0.9*10)**2, (0.9*10)**2, (0.9*1)**2, (0.9*1)**2, (0.9*10)**2])
         noise_var = np.diag(noise_vars)
