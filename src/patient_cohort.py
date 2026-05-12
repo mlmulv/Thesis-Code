@@ -76,7 +76,8 @@ class PatientCohort:
             D_func = utils.gen_D_func(D_const=input_consts[1])
             PN_func = utils.gen_PN_func(PN_const=input_consts[2])
             SI_func = utils.gen_SI_func(SI_const=input_consts[3])
-            BG, Q, I, P1, P2, P = icing_true.simulate(  # noqa: E741
+            ICINGTrue = icing_true.ICINGTrue()
+            BG, Q, I, P1, P2, P = ICINGTrue.simulate(  # noqa: E741
                 y0, t_start, t_end, self.t, uex_func, PN_func, D_func, SI_func
             )
             BG_meas = BG[self.sample_indices] + rng.normal(
