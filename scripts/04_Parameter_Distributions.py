@@ -10,7 +10,7 @@ def main():
     try:
         x0 = np.load("variables/x0_04.npy")
         inputs = np.load("variables/inputs_04.npy")
-        states = ['BG (mmol/L)', 'Q (mU/L)', 'I (mu/L)' , 'P1 (mmol)', 'P2 (mmol)']
+        states = ['BG (mmol/L)', 'I (mU/L)', 'Q (mu/L)' , 'P1 (mmol)', 'P2 (mmol)']
         input_labels = ['uex (mU/h)', 'D (mmol/min)', 'PN (mmol/min)', 'SI']
 
         fig, ax = plt.subplots(x0.shape[0],1, figsize=(12,8))
@@ -30,6 +30,9 @@ def main():
         fig2.tight_layout()
 
         plt.show()
+
+        print("Mean initial states: ", np.mean(x0, axis=1))
+        print("Initial Covariance: ", np.cov(x0, rowvar=True, bias=False))
          
 
     except Exception:

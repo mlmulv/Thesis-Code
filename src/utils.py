@@ -2,21 +2,17 @@ import numpy as np
 from scipy.stats import gaussian_kde
 from scipy.integrate import trapezoid
 
-def gen_SI_func(SI_const=2e-4):
+def gen_SI_func(SI_const):
     return lambda t: SI_const
 
-def gen_uex_func(type="exp"):
-    if type == "exp":
-        func = lambda t: 140*np.exp(-(np.log(2)/(5*60))*((t+120) % (5*60)))
-    elif type == "constant":
-        func = lambda t: 65
-    return func
-         
-def gen_D_func(D_const=0.30):
+def gen_uex_func(uex_const):
+    return lambda t: uex_const
+ 
+def gen_D_func(D_const):
     return lambda t: D_const
 
-def gen_PN_func():
-    return lambda t: np.exp(-(np.log(2)/(5*60))*(t % (5*60)))
+def gen_PN_func(PN_const):
+    return lambda t: PN_const
 
 def plot_weighted_kde(axis, samples, weights, bw, **plot_kwargs):
     avg = np.average(samples, weights=weights)

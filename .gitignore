@@ -3,3 +3,6 @@
 notebooks/.DS_Store
 scripts/.DS_Store
 *.png
+notebooks/archived
+src/.DS_Store
+scripts/variables/.DS_Store
