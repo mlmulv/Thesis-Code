@@ -1,7 +1,8 @@
-import numpy as np
-import scipy as sp
 import os
 import sys
+
+import numpy as np
+import scipy as sp
 
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
 import icing_true
@@ -31,7 +32,7 @@ class PatientCohort:
         self.dt = dt  # simulation resolution in hours
         self.dtmeas = dtmeas  # measurement resolution in hours
         self.meas_noise_std = meas_noise_std
-        self.uex_bounds = uex_bounds  # [low, high]
+        self.uex_bounds = uex_bounds  # [low, mean, std]
         self.D_bounds = D_bounds  # [low, high]
         self.PN_bounds = PN_bounds  # [low, high]
         self.SI_params = SI_params  # [low, mean, std]
@@ -61,9 +62,11 @@ class PatientCohort:
         SI_func = utils.gen_SI_func(SI_const)
         ICINGTrue = icing_true.ICINGTrue()
         t = 0
-        x0 = sp.optimize.fsolve(
-            ICINGTrue.icing_odes, self.y0, args=(t, uex_func, D_func, PN_func, SI_func)
-        )
+
+        def f(x):
+            return ICINGTrue.icing_odes(t, x, uex_func, PN_func, D_func, SI_func)
+
+        x0 = sp.optimize.fsolve(f, self.y0)
         return x0, [uex_const, D_const, PN_const, SI_const]
 
     def patient_data(self):
@@ -71,21 +74,25 @@ class PatientCohort:
         t_end = self.t[-1]
         data = []
         for i in range(self.num_patients):
-            y0, input_consts = self.initial_states()
-            uex_func = utils.gen_uex_func(uex_const=input_consts[0])
-            D_func = utils.gen_D_func(D_const=input_consts[1])
-            PN_func = utils.gen_PN_func(PN_const=input_consts[2])
-            SI_func = utils.gen_SI_func(SI_const=input_consts[3])
+            x0, input_consts = self.initial_states()
+            uex_const = input_consts[0]
+            PN_const = input_consts[1]
+            D_const = input_consts[2]
+            SI_const = input_consts[3]
+            uex_func = utils.gen_uex_func(uex_const=uex_const)
+            D_func = utils.gen_D_func(D_const=D_const)
+            PN_func = utils.gen_PN_func(PN_const=PN_const)
+            SI_func = utils.gen_SI_func(SI_const=SI_const)
             ICINGTrue = icing_true.ICINGTrue()
-            BG, Q, I, P1, P2, P = ICINGTrue.simulate(  # noqa: E741
-                y0, t_start, t_end, self.t, uex_func, PN_func, D_func, SI_func
+            BG, I, Q, P1, P2, P = ICINGTrue.simulate(  # noqa: E741
+                x0, t_start, t_end, self.t, uex_func, PN_func, D_func, SI_func
             )
             BG_meas = BG[self.sample_indices] + rng.normal(
                 0.0, self.meas_noise_std, size=len(self.sample_indices)
             )
             patient_info = {
                 "patient_id": f"Patient_{i}",
-                "y0": y0,
+                "x0": x0,
                 "BG": BG,
                 "BG_meas": BG_meas,
                 "Q": Q,
@@ -93,6 +100,14 @@ class PatientCohort:
                 "P1": P1,
                 "P2": P2,
                 "P": P,
+                "sim_hours": self.sim_hours,
+                "t": self.t,
+                "t_meas": self.t_meas,
+                "meas_noise_std": self.meas_noise_std,
+                "uex": np.asarray([uex_func(t) for t in self.t]),
+                "D": np.asarray([D_func(t) for t in self.t]),
+                "PN": np.asarray([PN_func(t) for t in self.t]),
+                "SI": np.asarray([SI_func(t) for t in self.t]),
             }
             data.append(patient_info)
         return data

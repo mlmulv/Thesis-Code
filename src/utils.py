@@ -1,6 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import trapezoid
 from scipy.stats import gaussian_kde
+
+import icing_true
 
 
 def gen_SI_func(SI_const):
@@ -42,7 +45,13 @@ def piecewise_constant_to_callable(values, timestamps):
     return f
 
 
-def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
+def integral_approximate_SI(G_t1, G_t0, Q, P, t):
+    ICINGTrue = icing_true.ICINGTrue()
+    pG = ICINGTrue.params["pG"]
+    alphaG = ICINGTrue.params["alphaG"]
+    EGP = ICINGTrue.params["EGP"]
+    CNS = ICINGTrue.params["CNS"]
+    VG = ICINGTrue.params["VG"]
     t_1 = t[-1] + 1
     t_0 = t[0]
     delta_t = t[1] - t[0]
@@ -96,9 +105,7 @@ def integral_approximate_SI(G_t1, G_t0, Q, P, t, pG, alphaG, EGP, CNS, VG):
     return SI
 
 
-def integral_approximate_SI_seq(
-    pG, alphaG, EGP, CNS, VG, t, t_meas, Ts_meas, G_meas, Q_true, P_true
-):
+def integral_approximate_SI_seq(t, t_meas, Ts_meas, G_meas, Q_true, P_true):
     SI = []
     for idx, ti in enumerate(t_meas[:-1]):
         t_mask = (t >= t[Ts_meas * idx]) & (t < t[Ts_meas * (idx + 1)])
@@ -108,8 +115,78 @@ def integral_approximate_SI_seq(
         G_t1 = G_meas[idx + 1]
         G_t0 = G_meas[idx]
         SI.append(
-            integral_approximate_SI(G_t1, G_t0, Q, P, times, pG, alphaG, EGP, CNS, VG)
+            integral_approximate_SI(G_t1, G_t0, Q, P, times)
         )
 
     SI = np.reshape(SI, shape=-1)
     return SI
+
+
+def plot_model(t, t_meas, G, G_meas, Q, I, P1, P2, P, uex, PN, D, SI):  # noqa: E741
+    ICINGTrue = icing_true.ICINGTrue()
+    fig, ax = plt.subplots(5, 1, sharex=True, figsize=(15, 10))
+
+    # Plot G in first subplot
+    ax[0].plot(t, G, label="BG (mmol/L)")
+    ax[0].plot(
+        t_meas, G_meas, marker="o", linestyle="--", color="black", label="BG Meas"
+    )
+    ax[0].set_ylabel("BG", rotation=0, ha="right")
+
+    # Plot I in second subplot
+    ax[1].plot(t, I, label="Insulin (mU/L)", color="orange")
+    ax[1].plot(
+        t,
+        uex,
+        label="Exogenous insulin (mU/min)",
+        color="orange",
+        linestyle="--",
+    )
+    ax[1].set_ylabel("Insulin", rotation=0, ha="right")
+
+    # Plot Q in third subplot
+    ax[2].plot(
+        t,
+        Q,
+        label="Interstitial Insulin Q (mU/L)",
+        color="purple",
+    )
+    effective_interstitial_insulin = Q / (1.0 + ICINGTrue.params["alphaG"] * Q)
+    ax[2].plot(
+        t,
+        effective_interstitial_insulin,
+        label="Effective Interstitial Q/(1+aG*Q)",
+        color="purple",
+        linestyle="--",
+    )
+    ax[2].set_ylabel("Interstitial Insulin", rotation=0, ha="right")
+
+    ax[3].plot(
+        t,
+        P,
+        label="Total Nutrition Input (mmol/min)",
+        color="green",
+    )
+    ax[3].plot(
+        t,
+        PN,
+        label="Parenteral Nutrition (mmol/min)",
+        color="green",
+        linestyle="--",
+    )
+    ax[3].plot(
+        t,
+        D,
+        label="Enteral Nutrition D (mmol/min)",
+        color="green",
+        linestyle=":",
+    )
+    ax[3].set_ylabel("Nutrition Input", rotation=0, ha="right")
+    # Plot SI in fifth subplot
+    ax[4].plot(t, SI, label="SI (L/mU/min)", color="red")
+    ax[4].set_ylabel("SI", rotation=0, ha="right")
+    ax[4].set_xlabel("Time (min)")
+
+    for a in ax:
+        a.grid(True)
+        a.legend(loc="best")

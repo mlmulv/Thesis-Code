@@ -82,7 +82,7 @@ class ICINGTrue:
         return [dGdt, dIdt, dQdt, dP1dt, dP2dt]
 
     def icing_odes(self, t, y, uex_func, PN_func, D_func, SI_func):
-        return self.__icing_odes(y, t, uex_func, PN_func, D_func, SI_func)
+        return self.__icing_odes(t, y, uex_func, PN_func, D_func, SI_func)
 
     def simulate(self, y0, t_start, t_end, t_eval, uex_func, PN_func, D_func, SI_func):
 
