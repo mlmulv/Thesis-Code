@@ -35,7 +35,7 @@ class PatientCohort:
         self.uex_bounds = uex_bounds  # [low, mean, std]
         self.D_bounds = D_bounds  # [low, high]
         self.PN_bounds = PN_bounds  # [low, high]
-        self.SI_params = SI_params  # [low, mean, std]
+        self.SI_params = SI_params  # [mean, std] in log domain
         self.y0 = y0
 
         # Assigned variables
@@ -47,11 +47,7 @@ class PatientCohort:
         uex_const = rng.uniform(low=self.uex_bounds[0], high=self.uex_bounds[1])
         D_const = rng.uniform(low=self.D_bounds[0], high=self.D_bounds[1])
         PN_const = rng.uniform(low=self.PN_bounds[0], high=self.PN_bounds[1])
-        a = (self.SI_params[0] - self.SI_params[1]) / self.SI_params[2]
-        b = float("inf")
-        SI_const = sp.stats.truncnorm.rvs(
-            a, b, loc=self.SI_params[1], scale=self.SI_params[2]
-        )
+        SI_const = np.exp(sp.stats.norm.rvs(loc=self.SI_params[0], scale=self.SI_params[1]))
         return uex_const, D_const, PN_const, SI_const
 
     def initial_states(self):

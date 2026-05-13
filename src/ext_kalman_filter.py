@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import tomllib
 
 
 class ExtendedKalmanFilter:
@@ -10,36 +11,26 @@ class ExtendedKalmanFilter:
         self.ts_meas = ts_meas
         self.SI_augment = model.SI_augment
 
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+        root_module = "global"
+        self.init_cov = cfg[root_module]["init_cov"]
+        self.u_en_max = cfg[root_module]["u_en_max"]
+        self.SI_max = cfg[root_module]["SI_max"]
+        self.init_cov_scale = cfg[root_module]["init_cov_scale"]
+
     def initialize_filter(self):
         state = self.model.initial_state
-        if self.model.SI_augment:
-            noise_vars = np.asarray(
-                [
-                    (0.9 * 7.5) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 10) ** 2,
-                    (1e-5) ** 2,
-                ]
+        if self.SI_augment:
+            noise_vars = self.init_cov_scale * np.diag(
+                np.append([self.init_cov, self.SI_max])
             )
         else:
-            noise_vars = np.asarray(
-                [
-                    (0.9 * 7.5) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 10) ** 2,
-                ]
-            )
-        noise_var = np.diag(noise_vars)
+            noise_vars = self.init_cov_scale * np.diag(self.init_cov)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
         self.R = np.array([[self.model.measurement_noise_var]])
-        return state, noise_var
+        return state, noise_vars
 
     def calc_f_model_func(self, m, curr_SI):
         # Variable Initialization

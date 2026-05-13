@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+import tomllib
 
 rng = np.random.default_rng()
 
@@ -52,33 +53,23 @@ class ICINGModel:
 
         self.SI_augment = SI_augment
 
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+        root_module = "global"
+        self.init_cov = cfg[root_module]["init_cov"]
+        self.u_en_max = cfg[root_module]["u_en_max"]
+        self.SI_max = cfg[root_module]["SI_max"]
+        self.init_cov_scale = cfg[root_module]["init_cov_scale"]
+
     def draw_initial_state(self):
         if self.SI_augment:
-            noise_vars = np.asarray(
-                [
-                    (0.9 * 7.5) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 10) ** 2,
-                    (1e-5) ** 2,
-                ]
+            noise_vars = self.init_cov_scale * np.diag(
+                np.append([self.init_cov, self.SI_max])
             )
         else:
-            noise_vars = np.asarray(
-                [
-                    (0.9 * 7.5) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 10) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 1) ** 2,
-                    (0.9 * 10) ** 2,
-                ]
-            )
-
+            noise_vars = self.init_cov_scale * np.diag(self.init_cov)
         return rng.multivariate_normal(
-            mean=self.initial_state[:, 0], cov=np.diag(noise_vars)
+            mean=self.initial_state[:, 0], cov=noise_vars
         )
 
     def get_inputs(self, t):
@@ -137,7 +128,7 @@ class ICINGModel:
         )
         if self.SI_augment:
             # Update SI
-            x_next[6, 0] = SI
+            x_next[6, 0] = np.log(SI)  # convert to log domain
 
         # Add process noise
         w = rng.multivariate_normal(
@@ -145,6 +136,11 @@ class ICINGModel:
             cov=np.diag(self.process_noise_var),
         )
         w = np.expand_dims(w, axis=1)
+        x_next_noise = x_next + w
+        if self.SI_augment:
+            x_next_noise[6, 0] = np.exp(
+                x_next_noise[6, 0]
+            )  # convert back from log domain
         return x_next + w
 
     def observation(self, x, t):
