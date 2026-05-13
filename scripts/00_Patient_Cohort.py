@@ -2,26 +2,34 @@ import os
 import pickle as pkl
 import sys
 
+import tomllib
+
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
 import patient_cohort
 
 
 def main():
     try:
-        patient_data = pkl.load(open("variables/patient_data_00.pkl", "rb"))
+        with open("variables/patient_data_00.pkl", "rb") as f:
+            patient_data = pkl.load(f)
         print("patient_data_00 variable already exists")
 
     except Exception:
-        num_patients = 5
-        sim_hours = 24
-        dt = 1.0
-        dtmeas = 120
-        meas_noise_std = 0.25
-        uex_bounds = [0, 166]
-        D_bounds = [0.2, 0.4]
-        PN_bounds = [0.2, 0.4]
-        SI_params = [1e-5, 0.0001, 0.00045]
-        y0 = [7.5, 150.0, 75.0, 6, 40]
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+        root_module = "global"
+        sim_hours = cfg[root_module]["sim_hours"]
+        dt = cfg[root_module]["dt"]
+        dtmeas = cfg[root_module]["dtmeas"]
+        meas_noise_std = cfg[root_module]["meas_noise_std"]
+        uex_bounds = cfg[root_module]["uex_bounds"]
+        D_bounds = cfg[root_module]["D_bounds"]
+        PN_bounds = cfg[root_module]["PN_bounds"]
+        SI_params = cfg[root_module]["SI_params"]
+        y0 = cfg[root_module]["y0"]
+
+        curr_module = "00"
+        num_patients = cfg[curr_module]["num_patients"]
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients=num_patients,

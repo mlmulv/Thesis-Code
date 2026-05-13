@@ -1,0 +1,35 @@
+[global]
+sim_hours = 24
+dt = 1.0
+dtmeas = 120
+meas_noise_std = 0.25
+uex_bounds = [0, 166]
+D_bounds = [0.2, 0.4]
+PN_bounds = [0.2, 0.4]
+SI_params = [1e-5, 0.0001, 0.00045]
+y0 = [7.5, 150.0, 75.0, 6, 40]
+
+[00]
+num_patients = 5
+num_simulations = 100000
+states = ["BG (mmol/L)", "I (mU/L)", "Q (mu/L)", "P1 (mmol)", "P2 (mmol)"]
+input_labels = ["uex (mU/min)", "D (mmol/min)", "PN (mmol/min)", "SI"]
+
+[01]
+x0 = [7.3, 134, 99 , 9 , 43]
+n_pert = 5
+c = 0.1
+x_max = [19, 270, 225, 11.5 , 57]
+threshold = 0.1
+uex_const = 80
+PN_const = 0.3
+D_const = 0.3
+SI_const = 0.0003
+
+[02]
+num_patients = 250
+max_std = 1.0
+num_std = 5
+low_perc = 5
+high_perc = 95
+CI = 90
