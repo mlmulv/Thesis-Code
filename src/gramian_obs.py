@@ -123,7 +123,8 @@ class EmperialGramianMatrix:
 
         x_s = np.sqrt(np.diag(W_O))
         T_s = np.linalg.inv(np.diag(x_s))
-        T_bar = np.matmul(T_s, T)
+        # T_bar = np.matmul(T_s, T)
+        T_bar = T
         x0_bar = np.matmul(T_s, self.x0)
         S_bar = np.matmul(T_s, self.S)
         cs_inv = np.linalg.inv(self.c * S_bar)
