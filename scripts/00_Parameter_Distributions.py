@@ -6,6 +6,7 @@ import tomllib
 
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
 import patient_cohort
+import icing_true
 
 
 def main():
@@ -44,11 +45,15 @@ def main():
             SI_params,
             y0,
         )
-        x0 = np.zeros((len(y0), num_simulations))
+
+        ICINGTrue = icing_true.ICINGTrue()
+
+        x0 = np.zeros((len(y0)+1, num_simulations))
         inputs = np.zeros((4, num_simulations))  # uex, D, PN, SI
 
         for i in range(num_simulations):
-            x0[:, i], inputs[:, i] = PatientCohort.initial_states()
+            x0[:-1, i], inputs[:, i] = PatientCohort.initial_states()
+            x0[-1, i] = ICINGTrue.params["k1"] * np.exp(-(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * x0[1,i])
 
         np.save("variables/x0_00", x0)
         np.save("variables/inputs_00", inputs)

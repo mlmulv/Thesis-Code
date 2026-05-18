@@ -3,6 +3,7 @@ import sys
 import time
 
 import numpy as np
+import tomllib
 
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
 import warnings
@@ -19,10 +20,6 @@ warnings.filterwarnings("error", category=RuntimeWarning)
 
 
 def worker(task):
-    uex_func = utils.gen_uex_func()
-    PN_func = utils.gen_PN_func()
-    D_func = utils.gen_D_func()
-    input_functions = {"D": D_func, "PN": PN_func, "Uex": uex_func}
     (
         filter_type,
         num_particles,
@@ -35,17 +32,26 @@ def worker(task):
         initial_state,
         process_noise_vars,
         meas_noise_std,
+        uex_const,
+        PN_const,
+        D_const,
+        SI_const,
     ) = task
-    model = icing_model.ICINGModel(
-        params=None,
-        dt=dt,
-        initial_state=initial_state,
-        process_noise_vars=process_noise_vars,
-        measurement_noise_var=meas_noise_std**2,
-        u_funcs=input_functions,
-    )
+    
 
     if filter_type == "PF":
+        uex_func = utils.gen_uex_func(uex_const)
+        PN_func = utils.gen_PN_func(PN_const)
+        D_func = utils.gen_D_func(D_const)
+        input_functions = {"D": D_func, "PN": PN_func, "Uex": uex_func}
+        model = icing_model.ICINGModel(
+            params=None,
+            dt=dt,
+            initial_state=initial_state,
+            process_noise_vars=process_noise_vars,
+            measurement_noise_var=meas_noise_std**2,
+            u_funcs=input_functions,
+        )
         PF_filter = particle_filter.BootstrapParticleFilter(
             num_particles=num_particles,
             num_states=num_states,
@@ -56,6 +62,19 @@ def worker(task):
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
     else:
+        uex_func = utils.gen_uex_func(uex_const)
+        PN_func = utils.gen_PN_func(PN_const)
+        D_func = utils.gen_D_func(D_const)
+        input_functions = {"D": D_func, "PN": PN_func, "Uex": uex_func}
+        model = icing_model.ICINGModel(
+            params=None,
+            dt=dt,
+            initial_state=initial_state,
+            process_noise_vars=process_noise_vars,
+            measurement_noise_var=meas_noise_std**2,
+            u_funcs=input_functions,
+        )
+
         EKF_filter = ext_kalman_filter.ExtendedKalmanFilter(
             num_states=num_states, model=model, ts_meas=dtmeas
         )
@@ -68,22 +87,32 @@ def worker(task):
 
 def main():
     try:
-        SI_ests = np.load("variables/SI_ests_augment_static_03.npy")
-        SI_errs = np.load("variables/SI_errs_augment_static_03.npy")
+        SI_ests = np.load("variables/SI_ests_augment_static_04.npy")
+        SI_errs = np.load("variables/SI_errs_augment_static_04.npy")
+        SI_true_arr = np.load("variables/SI_true_arr_augment_static_04.npy")
         print("Loaded variables from previous run")
     except Exception:
-        BG_logmu = 7.6
-        BG_logsigma = 1.3
-        num_patients = 1
-        sim_hours = 60
-        dt = 1.0
-        t = np.arange(0, sim_hours * 60 + 1, dt)
-        dtmeas = 60
-        t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
-        meas_noise_std = 0.25
-        SI_const = 2.0e-4
-        SI_init = 2.2e-4
-        y0 = [BG_logmu, 1.1 * 15.0, 1.1 * 15.0, 0.0, 0.0]
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+        root_module = "global"
+        dt = cfg[root_module]["dt"]
+        dtmeas = cfg[root_module]["dtmeas"]
+        meas_noise_std = cfg[root_module]["meas_noise_std"]
+        uex_bounds = cfg[root_module]["uex_bounds"]
+        D_bounds = cfg[root_module]["D_bounds"]
+        PN_bounds = cfg[root_module]["PN_bounds"]
+        SI_params = cfg[root_module]["SI_params"]
+        y0 = cfg[root_module]["y0"]
+        x_max = cfg[root_module]["x_max"]
+        u_en_max = cfg[root_module]["u_en_max"]
+        log_sigma_SI = cfg[root_module]["log_sigma_SI"]
+
+        curr_module = "04"
+        sim_hours = cfg[curr_module]["sim_hours"]
+        num_patients = cfg[curr_module]["num_patients"]
+        process_noise_factor = cfg[curr_module]["process_noise_factor"]
+        num_particles = np.asarray(cfg[curr_module]["num_particles"])
+        deviation = cfg[curr_module]["deviation"]
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients=num_patients,
@@ -91,51 +120,65 @@ def main():
             dt=dt,
             dtmeas=dtmeas,
             meas_noise_std=meas_noise_std,
-            BG_params=[BG_logmu, BG_logsigma],
+            uex_bounds=uex_bounds,
+            D_bounds=D_bounds,
+            PN_bounds=PN_bounds,
+            SI_params=SI_params,
+            y0=y0,
         )
-        uex_func = utils.gen_uex_func()
-        PN_func = utils.gen_PN_func()
-        D_func = utils.gen_D_func()
-        SI_func = utils.gen_SI_func(SI_const=SI_const)
-        SI_true = SI_const * np.ones_like(t)
-        patient_data = PatientCohort.patient_data(
-            uex_func=uex_func, PN_func=PN_func, D_func=D_func, SI_func=SI_func
-        )
-        y0 = [BG_logmu, 1.1 * 15, 1.1 * 15, 0, 0]
+
+        patient_data = PatientCohort.patient_data()
+
         ICINGTrue = icing_true.ICINGTrue()
-        initial_state = np.append(
-            y0,
-            [
-                ICINGTrue.params["k1"]
-                * np.exp(-y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]),
-                SI_init,
-            ],
-        )
-        initial_state = np.expand_dims(initial_state, axis=1)
-        num_states = len(initial_state)
-        process_noises = np.asarray(
-            [
-                (0.00001 * 11) ** 2,
-                (0.00005 * 100) ** 2,
-                (0.00005 * 175) ** 2,
-                (0.0005 * 1.5) ** 2,
-                (0.0005 * 1.5) ** 2,
-                (0.00005 * 150) ** 2,
-                (1e-5 / 120) ** 2,
-            ]
-        )
-        num_particles = np.asarray([250, 500, 750, 1000])
+
         num_filters = (
             len(num_particles) + 1
         )  # 1 EKF filter and the number of variations of PF with the assigned number of particles
-
+        t = np.arange(0, sim_hours * 60 + 1, dt)
+        t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
         SI_ests = np.zeros((num_filters, num_patients, len(t)))
         SI_errs = np.zeros_like(SI_ests)
+        SI_true_arr = np.zeros((num_patients, len(t)))
+
+        process_noises = np.asarray(
+            [
+                (process_noise_factor * x_max[0]) ** 2,
+                (process_noise_factor * x_max[1]) ** 2,
+                (process_noise_factor * x_max[2]) ** 2,
+                (process_noise_factor * x_max[3]) ** 2,
+                (process_noise_factor * x_max[4]) ** 2,
+                (process_noise_factor * u_en_max) ** 2,
+                (process_noise_factor * log_sigma_SI) ** 2,
+            ]
+        )
 
         time_start = time.time()
         for i in range(num_patients):
             print(f"Patient {i + 1} / {num_patients}")
             G_meas = patient_data[i]["BG_meas"]
+            uex_const = patient_data[i]["uex"][0]
+            SI_const = patient_data[i]["SI"][0]
+            D_const = patient_data[i]["D"][0]
+            PN_const = patient_data[i]["PN"][0]
+            G_0 = patient_data[i]["BG"][0]
+            Q_0 = patient_data[i]["Q"][0]
+            I_0 = patient_data[i]["I"][0]
+            P1_0 = patient_data[i]["P1"][0]
+            P2_0 = patient_data[i]["P2"][0]
+            SI_true = patient_data[i]["SI"]
+            SI_true_arr[i,:] = SI_true
+            SI_0 = patient_data[i]["SI"][0]
+            y0 = [G_0, I_0, Q_0, P1_0, P2_0]
+            initial_state = deviation * np.append(
+                y0,
+                [
+                    ICINGTrue.params["k1"]
+                    * np.exp(-y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]),
+                    SI_0,
+                ],
+            )
+            initial_state = np.expand_dims(initial_state, axis=1)
+            num_states = len(initial_state)
 
             tasks = []
             for j in range(num_filters):
@@ -153,8 +196,13 @@ def main():
                             initial_state,
                             process_noises,
                             meas_noise_std,
+                            uex_const,
+                            PN_const,
+                            D_const,
+                            SI_const,
                         )
                     )
+
                 else:  # EKF
                     tasks.append(
                         (
@@ -169,9 +217,12 @@ def main():
                             initial_state,
                             process_noises,
                             meas_noise_std,
+                            uex_const,
+                            PN_const,
+                            D_const,
+                            SI_const,
                         )
                     )
-
             n_workers = min(len(tasks), cpu_count())
 
             with Pool(processes=n_workers) as p:
@@ -184,8 +235,9 @@ def main():
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
-        np.save("variables/SI_ests_augment_static_03", SI_ests)
-        np.save("variables/SI_errs_augment_static_03", SI_errs)
+        np.save("variables/SI_ests_augment_static_04", SI_ests)
+        np.save("variables/SI_errs_augment_static_04", SI_errs)
+        np.save("variables/SI_true_arr_augment_static_04", SI_true_arr)
 
 
 if __name__ == "__main__":

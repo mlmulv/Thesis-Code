@@ -58,19 +58,24 @@ class ICINGModel:
         root_module = "global"
         self.init_cov = cfg[root_module]["init_cov"]
         self.u_en_max = cfg[root_module]["u_en_max"]
-        self.SI_max = cfg[root_module]["SI_max"]
+        self.SI_params = cfg[root_module]["SI_params"]
         self.init_cov_scale = cfg[root_module]["init_cov_scale"]
 
     def draw_initial_state(self):
         if self.SI_augment:
             noise_vars = self.init_cov_scale * np.diag(
-                np.append([self.init_cov, self.SI_max])
+                np.append(self.init_cov, self.SI_params[1])
+            )
+            initial_state_logSI = self.initial_state.copy()
+            initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
+            return rng.multivariate_normal(
+                mean=initial_state_logSI[:, 0], cov=noise_vars**2
             )
         else:
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
-        return rng.multivariate_normal(
-            mean=self.initial_state[:, 0], cov=noise_vars
-        )
+            return rng.multivariate_normal(
+                mean=self.initial_state[:, 0], cov=noise_vars**2
+            )
 
     def get_inputs(self, t):
         Uex = self.ufuncs["Uex"](t)
@@ -136,12 +141,12 @@ class ICINGModel:
             cov=np.diag(self.process_noise_var),
         )
         w = np.expand_dims(w, axis=1)
-        x_next_noise = x_next + w
         if self.SI_augment:
-            x_next_noise[6, 0] = np.exp(
-                x_next_noise[6, 0]
-            )  # convert back from log domain
-        return x_next + w
+            x_next_noise = x_next + w
+            x_next_noise[-1, 0] = np.exp(x_next_noise[-1, 0])
+        else:
+            x_next_noise = x_next + w
+        return x_next_noise
 
     def observation(self, x, t):
         return x[0] + rng.normal(0.0, np.sqrt(self.measurement_noise_var))

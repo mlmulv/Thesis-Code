@@ -63,6 +63,7 @@ class PatientCohort:
             return ICINGTrue.icing_odes(t, x, uex_func, PN_func, D_func, SI_func)
 
         x0 = sp.optimize.fsolve(f, self.y0)
+
         return x0, [uex_const, D_const, PN_const, SI_const]
 
     def patient_data(self):
@@ -86,6 +87,7 @@ class PatientCohort:
             BG_meas = BG[self.sample_indices] + rng.normal(
                 0.0, self.meas_noise_std, size=len(self.sample_indices)
             )
+            uen = ICINGTrue.params["k1"] * np.exp(-(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * I)
             patient_info = {
                 "patient_id": f"Patient_{i}",
                 "x0": x0,
@@ -96,6 +98,7 @@ class PatientCohort:
                 "P1": P1,
                 "P2": P2,
                 "P": P,
+                "uen": uen,
                 "sim_hours": self.sim_hours,
                 "t": self.t,
                 "t_meas": self.t_meas,

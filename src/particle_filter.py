@@ -36,6 +36,8 @@ class BootstrapParticleFilter:
     def initialise_particles(self):
         for i in range(self.num_particles):
             self.particles[i, :] = self.model.draw_initial_state()
+            if self.model.SI_augment:
+                self.particles[i,-1] = np.exp(self.particles[i,-1])
         # self.step_counter = 0
 
     def get_weights(self):
