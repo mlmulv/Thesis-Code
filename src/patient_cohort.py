@@ -83,9 +83,11 @@ class PatientCohort:
                 SI_next_const = SI_const.copy()
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
+                    scale = (0.3 * np.log(SI_curr_const)) / 2.576
+
                     SI_next_const = np.exp(
                         sp.stats.norm.rvs(
-                            loc=np.log(SI_curr_const), scale=np.abs(0.02 * np.log(SI_curr_const))
+                            loc=np.log(SI_curr_const), scale=np.abs(scale)
                         )
                     )
                     SI_const = np.append(SI_const, SI_next_const)
