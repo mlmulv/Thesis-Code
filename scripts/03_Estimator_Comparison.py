@@ -80,9 +80,9 @@ def worker(task):
 
 def main():
     try:
-        error_est = np.load("variables/error_arr_03.npy")
-        time_train = np.load("variables/time_arr_03.npy")
-        G_ests = np.load("variables/G_ests_03.npy")
+        error_est = np.load("variables/error_arr_03_temp.npy")
+        time_train = np.load("variables/time_arr_03_temp.npy")
+        G_ests = np.load("variables/G_ests_03_temp.npy")
         print("Previous run variables already exist")
 
     except Exception:
@@ -232,9 +232,9 @@ def main():
                 print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
-        np.save("variables/time_arr_03", time_train)
-        np.save("variables/error_arr_03", error_est)
-        np.save("variables/G_ests_03", G_ests)
+        np.save("variables/time_arr_03_temp", time_train)
+        np.save("variables/error_arr_03_temp", error_est)
+        np.save("variables/G_ests_03_temp", G_ests)
 
 
 if __name__ == "__main__":

@@ -82,8 +82,11 @@ class PatientCohort:
             if self.SI_piecewise_changes is not None:
                 SI_next_const = SI_const.copy()
                 for i in range(self.SI_piecewise_changes):
+                    SI_curr_const = SI_next_const.copy()
                     SI_next_const = np.exp(
-                        sp.stats.norm.rvs(loc=np.log(SI_next_const), scale=0.1)
+                        sp.stats.norm.rvs(
+                            loc=np.log(SI_curr_const), scale=np.abs(0.02 * np.log(SI_curr_const))
+                        )
                     )
                     SI_const = np.append(SI_const, SI_next_const)
 
@@ -96,9 +99,7 @@ class PatientCohort:
                         SI_values[i * shift : (next_idx * shift)] = SI_const[i]
                     else:
                         SI_values[i * shift : (next_idx * shift) + 1] = SI_const[i]
-                    
 
-                print(SI_values)
                 SI_func = utils.piecewise_constant_to_callable(SI_values, self.t)
             else:
                 SI_func = utils.gen_SI_func(SI_const=SI_const)
