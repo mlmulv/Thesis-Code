@@ -112,7 +112,7 @@ def main():
         num_patients = cfg[curr_module]["num_patients"]
         process_noise_factor = cfg[curr_module]["process_noise_factor"]
         num_particles = np.asarray(cfg[curr_module]["num_particles"])
-        deviation = cfg[curr_module]["deviation"]
+        deviations = cfg[curr_module]["deviations"]
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients=num_patients,
@@ -134,9 +134,10 @@ def main():
         num_filters = (
             len(num_particles) + 1
         )  # 1 EKF filter and the number of variations of PF with the assigned number of particles
+        num_deviations = len(deviations)
         t = np.arange(0, sim_hours * 60 + 1, dt)
         t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
-        SI_ests = np.zeros((num_filters, num_patients, len(t)))
+        SI_ests = np.zeros((num_deviations, num_filters, num_patients, len(t)))
         SI_errs = np.zeros_like(SI_ests)
         SI_true_arr = np.zeros((num_patients, len(t)))
 
@@ -169,68 +170,70 @@ def main():
             SI_true_arr[i,:] = SI_true
             SI_0 = patient_data[i]["SI"][0]
             y0 = [G_0, I_0, Q_0, P1_0, P2_0]
-            initial_state = deviation * np.append(
-                y0,
-                [
-                    ICINGTrue.params["k1"]
-                    * np.exp(-y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]),
-                    SI_0,
-                ],
-            )
-            initial_state = np.expand_dims(initial_state, axis=1)
-            num_states = len(initial_state)
+            for k in range(num_deviations):
+                deviation = deviations[k]
+                initial_state = deviation * np.append(
+                    y0,
+                    [
+                        ICINGTrue.params["k1"]
+                        * np.exp(-y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]),
+                        SI_0,
+                    ],
+                )
+                initial_state = np.expand_dims(initial_state, axis=1)
+                num_states = len(initial_state)
 
-            tasks = []
-            for j in range(num_filters):
-                if j != 0:  # PF
-                    tasks.append(
-                        (
-                            "PF",
-                            num_particles[j - 1],
-                            num_states,
-                            dt,
-                            dtmeas,
-                            t,
-                            t_meas,
-                            G_meas,
-                            initial_state,
-                            process_noises,
-                            meas_noise_std,
-                            uex_const,
-                            PN_const,
-                            D_const,
-                            SI_const,
+                tasks = []
+                for j in range(num_filters):
+                    if j != 0:  # PF
+                        tasks.append(
+                            (
+                                "PF",
+                                num_particles[j - 1],
+                                num_states,
+                                dt,
+                                dtmeas,
+                                t,
+                                t_meas,
+                                G_meas,
+                                initial_state,
+                                process_noises,
+                                meas_noise_std,
+                                uex_const,
+                                PN_const,
+                                D_const,
+                                SI_const,
+                            )
                         )
-                    )
 
-                else:  # EKF
-                    tasks.append(
-                        (
-                            "EKF",
-                            0,
-                            num_states,
-                            dt,
-                            dtmeas,
-                            t,
-                            t_meas,
-                            G_meas,
-                            initial_state,
-                            process_noises,
-                            meas_noise_std,
-                            uex_const,
-                            PN_const,
-                            D_const,
-                            SI_const,
+                    else:  # EKF
+                        tasks.append(
+                            (
+                                "EKF",
+                                0,
+                                num_states,
+                                dt,
+                                dtmeas,
+                                t,
+                                t_meas,
+                                G_meas,
+                                initial_state,
+                                process_noises,
+                                meas_noise_std,
+                                uex_const,
+                                PN_const,
+                                D_const,
+                                SI_const,
+                            )
                         )
-                    )
-            n_workers = min(len(tasks), cpu_count())
+                n_workers = min(len(tasks), cpu_count())
 
-            with Pool(processes=n_workers) as p:
-                results = p.map(worker, tasks)
+                with Pool(processes=n_workers) as p:
+                    results = p.map(worker, tasks)
 
-            for j, SI_est in enumerate(results):
-                SI_ests[j, i, :] = SI_est
-                SI_errs[j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
+                for j, SI_est in enumerate(results):
+                    SI_ests[k, j, i, :] = SI_est
+                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
