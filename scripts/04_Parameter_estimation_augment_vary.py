@@ -60,6 +60,10 @@ def worker(task):
         sim = PF_filter.simulate(t, t_meas, G_meas, PF_filter)
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
+        SI_est_expanded = np.repeat(SI_est[:, None], saved_particles.shape[1], axis=1)
+        SI_var = np.average(
+            (saved_particles[:, :, -1] - SI_est_expanded) ** 2, weights=saved_weights, axis=1
+        )
     else:
         uex_func = utils.gen_uex_func(uex_const)
         PN_func = utils.gen_PN_func(PN_const)
@@ -78,15 +82,17 @@ def worker(task):
             num_states=num_states, model=model, ts_meas=dtmeas
         )
         sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
-        saved_state, _, _, _, _, _, _, _, _, _ = sim.run()
+        saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = saved_state[:, -1]
+        SI_var = saved_noise_var[:,-1,-1]
 
-    return SI_est
+    return SI_est, SI_var
 
 
 def main():
     try:
         SI_ests = np.load("variables/SI_ests_augment_vary_04.npy")
+        SI_vars = np.load("variables/SI_vars_augment_vary_04.npy")
         SI_errs = np.load("variables/SI_errs_augment_vary_04.npy")
         SI_true_arr = np.load("variables/SI_true_arr_augment_vary_04.npy")
         print("Loaded variables from previous run")
@@ -107,12 +113,13 @@ def main():
         log_sigma_SI = cfg[root_module]["log_sigma_SI"]
 
         curr_module = "04"
-        sim_hours = 2 * cfg[curr_module]["sim_hours"]
+        sim_hours = cfg[curr_module]["sim_hours"]
         num_patients = cfg[curr_module]["num_patients"]
-        process_noise_factor = cfg[curr_module]["process_noise_factor"]
+        process_noise_factor = cfg[curr_module]["process_noise_factor_vary"]
         num_particles = np.asarray(cfg[curr_module]["num_particles"])
         deviations = cfg[curr_module]["deviations"]
         change_SI = cfg[curr_module]["change_SI"]
+        SI_scale = cfg[curr_module]["SI_scale"]
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients=num_patients,
@@ -126,6 +133,7 @@ def main():
             SI_params=SI_params,
             y0=y0,
             SI_piecewise_changes=change_SI,
+            SI_scale=SI_scale,
         )
 
         patient_data = PatientCohort.patient_data()
@@ -139,6 +147,7 @@ def main():
         t = np.arange(0, sim_hours * 60 + 1, dt)
         t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
         SI_ests = np.zeros((num_deviations, num_filters, num_patients, len(t)))
+        SI_vars = np.zeros_like(SI_ests)
         SI_errs = np.zeros_like(SI_ests)
         SI_true_arr = np.zeros((num_patients, len(t)))
 
@@ -234,14 +243,16 @@ def main():
                 with Pool(processes=n_workers) as p:
                     results = p.map(worker, tasks)
 
-                for j, SI_est in enumerate(results):
+                for j, (SI_est, SI_var) in enumerate(results):
                     SI_ests[k, j, i, :] = SI_est
+                    SI_vars[k, j, i, :] = SI_var
                     SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
         np.save("variables/SI_ests_augment_vary_04", SI_ests)
+        np.save("variables/SI_vars_augment_vary_04", SI_vars)
         np.save("variables/SI_errs_augment_vary_04", SI_errs)
         np.save("variables/SI_true_arr_augment_vary_04", SI_true_arr)
 

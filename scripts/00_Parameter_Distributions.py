@@ -48,12 +48,13 @@ def main():
 
         ICINGTrue = icing_true.ICINGTrue()
 
-        x0 = np.zeros((len(y0)+1, num_simulations))
+        x0 = np.zeros((len(y0)+2, num_simulations))
         inputs = np.zeros((4, num_simulations))  # uex, D, PN, SI
 
         for i in range(num_simulations):
-            x0[:-1, i], inputs[:, i] = PatientCohort.initial_states()
-            x0[-1, i] = ICINGTrue.params["k1"] * np.exp(-(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * x0[1,i])
+            x0[:-2, i], inputs[:, i] = PatientCohort.initial_states()
+            x0[-2, i] = min(ICINGTrue.params["d2"] * x0[-3, i], ICINGTrue.params["Pmax"]) + inputs[2, i] # P
+            x0[-1, i] = ICINGTrue.params["k1"] * np.exp(-(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * x0[1,i]) # uen 
 
         np.save("variables/x0_00", x0)
         np.save("variables/inputs_00", inputs)

@@ -205,7 +205,7 @@ class BootstrapParticleFilter:
                     SI_est[idx] = mean_i[-1]
             # print("done")
 
-            # UNEXPECTED BEHAVIOUR THAT ESTIMATES ARE AN INTEGER. FOR NOW ONY USE SAVED_PARTICLES AND SAVED_PARTICLES FOR STATE CALCULATIONS
+            # UNEXPECTED BEHAVIOUR THAT ESTIMATES ARE AN INTEGER. FOR NOW ONY USE SAVED_PARTICLES AND SAVED_WEIGHTS FOR STATE CALCULATIONS
             return (
                 initial_particles,
                 initial_weights,

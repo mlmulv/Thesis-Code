@@ -25,6 +25,7 @@ class PatientCohort:
         SI_params,
         y0,
         SI_piecewise_changes=None,
+        SI_scale = None
     ):
         # Inputs
         self.num_patients = num_patients
@@ -38,6 +39,7 @@ class PatientCohort:
         self.SI_params = SI_params  # [mean, std] in log domain
         self.y0 = y0
         self.SI_piecewise_changes = SI_piecewise_changes  # number of changes
+        self.SI_scale = SI_scale
 
         # Assigned variables
         self.t = np.arange(0, sim_hours * 60 + 1, dt)
@@ -83,11 +85,9 @@ class PatientCohort:
                 SI_next_const = SI_const.copy()
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
-                    scale = (0.3 * np.log(SI_curr_const)) / 2.576
-
                     SI_next_const = np.exp(
                         sp.stats.norm.rvs(
-                            loc=np.log(SI_curr_const), scale=np.abs(scale)
+                            loc=np.log(SI_curr_const), scale=self.SI_scale
                         )
                     )
                     SI_const = np.append(SI_const, SI_next_const)
