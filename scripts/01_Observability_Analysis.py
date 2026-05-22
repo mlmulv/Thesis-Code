@@ -1,0 +1,100 @@
+import os
+import sys
+import time
+
+import numpy as np
+
+sys.path.append(os.path.abspath(os.path.join("..", "src")))
+import tomllib
+
+import gramian_obs
+import patient_cohort
+import utils
+
+
+def main():
+    try:
+        min_eig_values = np.load("variables/min_eig_values_01.npy")
+        print("Previous run variables exist")
+    except Exception:
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+
+        root_module = "global"
+        sim_hours = cfg[root_module]["sim_hours"]
+        dt = cfg[root_module]["dt"]
+        dtmeas = cfg[root_module]["dtmeas"]
+        meas_noise_std = cfg[root_module]["meas_noise_std"]
+        uex_bounds = cfg[root_module]["uex_bounds"]
+        D_bounds = cfg[root_module]["D_bounds"]
+        PN_bounds = cfg[root_module]["PN_bounds"]
+        SI_params = cfg[root_module]["SI_params"]
+        y0 = cfg[root_module]["y0"]
+        x_max = cfg[root_module]["x_max"]
+
+        curr_module = "01"
+        n_pert = cfg[curr_module]["n_pert"]
+        c = cfg[curr_module]["c"]
+        threshold = cfg[curr_module]["threshold"]
+        num_patients = cfg[curr_module]["num_patients"]
+
+        PatientCohort = patient_cohort.PatientCohort(
+            num_patients=num_patients,
+            sim_hours=sim_hours,
+            dt=dt,
+            dtmeas=dtmeas,
+            meas_noise_std=meas_noise_std,
+            uex_bounds=uex_bounds,
+            D_bounds=D_bounds,
+            PN_bounds=PN_bounds,
+            SI_params=SI_params,
+            y0=y0,
+            SI_piecewise_changes=None,
+        )
+
+        patient_data = PatientCohort.patient_data()
+
+        t = np.arange(
+            0, sim_hours * 60 + 1, dt
+        )  # 0 to 60 hours with minute-level resolution
+        min_eig_values = np.zeros((num_patients,))
+
+        time_start = time.time()
+        for i in range(num_patients):
+            if (i + 1) % 1000 == 0:
+                print(f"Patient {i + 1} / {num_patients}")
+                print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
+
+            x0 = patient_data[i]["x0"]
+            uex_const = patient_data[i]["uex"][0]
+            D_const = patient_data[i]["D"][0]
+            PN_const = patient_data[i]["PN"][0]
+            SI_const = patient_data[i]["SI"][0]
+            uex_func = utils.gen_uex_func(uex_const=uex_const)
+            PN_func = utils.gen_PN_func(PN_const=PN_const)
+            D_func = utils.gen_D_func(D_const=D_const)
+            SI_func = utils.gen_SI_func(SI_const=SI_const)
+
+            Gramian = gramian_obs.EmperialGramianMatrix(
+                x0=x0,
+                n_pert=n_pert,
+                c=c,
+                x_max=x_max,
+                t=t,
+                dt=dt,
+                uex_func=uex_func,
+                PN_func=PN_func,
+                D_func=D_func,
+                SI_func=SI_func,
+                threshold=threshold,
+                SI_est=None,
+            )
+            W_O, eig_vals, eig_vectors = Gramian.gramian()
+            min_eig_values[i] = np.min(eig_vals)
+
+        print("Done!")
+        np.save("variables/min_eig_values_01", min_eig_values)
+
+
+if __name__ == "__main__":
+    main()
