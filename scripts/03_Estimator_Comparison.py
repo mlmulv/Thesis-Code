@@ -63,6 +63,16 @@ def worker(task):
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
         timeEnd = time.time()
         G_est = np.average(saved_particles[:, :, 0], weights=saved_weights, axis=1)
+        weights = np.repeat(saved_weights[:, :, np.newaxis], 6, axis=2) # 6 is num_states
+        states = np.average(saved_particles, weights=weights, axis=1)
+        difference = saved_particles - states[:, np.newaxis, :]
+        outer = difference[:, :, np.newaxis, :] * difference[:, :, :, np.newaxis]
+        weights = np.repeat(weights[:, :, :, np.newaxis], 6, axis=3)
+        all_vars = np.average(
+            (outer) ** 2,
+            weights=weights,
+            axis=1,
+        )
         time_elapsed = timeEnd - timeStart
     else:
         EKF_filter = ext_kalman_filter.ExtendedKalmanFilter(
@@ -70,12 +80,14 @@ def worker(task):
         )
         sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter, SI_fixed=SI_const)
         timeStart = time.time()
-        saved_state, _, _, _, _, _, _, _, _, _ = sim.run()
+        saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
         timeEnd = time.time()
         G_est = saved_state[:, 0]
+        states = saved_state
+        all_vars = saved_noise_var
         time_elapsed = timeEnd - timeStart
 
-    return time_elapsed, G_est
+    return time_elapsed, G_est, states, all_vars
 
 
 def main():
@@ -83,6 +95,9 @@ def main():
         error_est = np.load("variables/error_arr_03_temp.npy")
         time_train = np.load("variables/time_arr_03_temp.npy")
         G_ests = np.load("variables/G_ests_03_temp.npy")
+        G_trues = np.load("variables/G_trues_03_temp.npy")
+        states = np.load("variables/states_03_temp.npy")
+        all_vars = np.load("variables/vars_03_temp.npy")
         print("Previous run variables already exist")
 
     except Exception:
@@ -97,9 +112,6 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
-        x_max = cfg[root_module]["x_max"]
-        u_en_max = cfg[root_module]["u_en_max"]
-
         curr_module = "03"
         num_patients = cfg[curr_module]["num_patients"]
         sim_hours = cfg[curr_module]["sim_hours"]
@@ -128,12 +140,12 @@ def main():
 
         process_noises = np.asarray(
             [
-                (process_noise_factor * x_max[0]) ** 2,
-                (process_noise_factor * x_max[1]) ** 2,
-                (process_noise_factor * x_max[2]) ** 2,
-                (process_noise_factor * x_max[3]) ** 2,
-                (process_noise_factor * x_max[4]) ** 2,
-                (process_noise_factor * u_en_max) ** 2,
+                (process_noise_factor),
+                (process_noise_factor),
+                (process_noise_factor),
+                (process_noise_factor),
+                (process_noise_factor),
+                (process_noise_factor),
             ]
         )
 
@@ -145,14 +157,18 @@ def main():
         time_train = np.zeros(shape=(num_deviations, num_filters, num_patients))
         error_est = np.zeros(shape=(num_deviations, num_filters, num_patients, len(t)))
         G_ests = np.zeros_like(error_est)
+        G_trues = np.zeros((num_patients, len(t)))
+        states = np.zeros((num_deviations, num_filters, num_patients, len(t), 6))
+        all_vars = np.zeros((num_deviations, num_filters, num_patients, len(t), 6, 6))
 
         time_start = time.time()
         for n in range(num_deviations):
-            print(f"Stage {n+1} / {num_deviations}")
+            print(f"Stage {n + 1} / {num_deviations}")
             deviation = deviations[n]
             for i in range(num_patients):
                 print(f"Patient {i + 1} / {num_patients}")
                 G_true = patient_data[i]["BG"]
+                G_trues[i,:] = G_true
                 G_meas = patient_data[i]["BG_meas"]
                 uex_const = patient_data[i]["uex"][0]
                 SI_const = patient_data[i]["SI"][0]
@@ -224,10 +240,12 @@ def main():
                 with Pool(processes=n_workers) as p:
                     results = p.map(worker, tasks)
 
-                for k, (elapsed, G_est) in enumerate(results):
+                for k, (elapsed, G_est, all_state, all_var) in enumerate(results):
                     time_train[n, k, i] = elapsed
                     G_ests[n, k, i, :] = G_est
                     error_est[n, k, i, :] = (G_true - G_est) ** 2
+                    states[n, k, i, :, :] = all_state
+                    all_vars[n, k, i, :, :, :] = all_var
 
                 print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
@@ -235,7 +253,9 @@ def main():
         np.save("variables/time_arr_03_temp", time_train)
         np.save("variables/error_arr_03_temp", error_est)
         np.save("variables/G_ests_03_temp", G_ests)
-
+        np.save("variables/G_trues_03_temp", G_trues)
+        np.save("variables/states_03_temp", states)
+        np.save("variables/vars_03_temp", all_vars)
 
 if __name__ == "__main__":
     main()

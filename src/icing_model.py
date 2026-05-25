@@ -61,22 +61,6 @@ class ICINGModel:
         self.SI_params = cfg[root_module]["SI_params"]
         self.init_cov_scale = cfg[root_module]["init_cov_scale"]
 
-    def draw_initial_state(self):
-        if self.SI_augment:
-            noise_vars = self.init_cov_scale * np.diag(
-                np.append(self.init_cov, self.SI_params[1])
-            )
-            initial_state_logSI = self.initial_state.copy()
-            initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
-            return rng.multivariate_normal(
-                mean=initial_state_logSI[:, 0], cov=noise_vars**2
-            )
-        else:
-            noise_vars = self.init_cov_scale * np.diag(self.init_cov)
-            return rng.multivariate_normal(
-                mean=self.initial_state[:, 0], cov=noise_vars**2
-            )
-
     def get_inputs(self, t):
         Uex = self.ufuncs["Uex"](t)
         D = self.ufuncs["D"](t)

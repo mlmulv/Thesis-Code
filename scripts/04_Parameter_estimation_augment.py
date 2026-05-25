@@ -37,7 +37,6 @@ def worker(task):
         D_const,
         SI_const,
     ) = task
-    
 
     if filter_type == "PF":
         uex_func = utils.gen_uex_func(uex_const)
@@ -60,7 +59,19 @@ def worker(task):
         )
         sim = PF_filter.simulate(t, t_meas, G_meas, PF_filter)
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
+
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
+        weights = np.repeat(saved_weights[:, :, np.newaxis], 7, axis=2)
+        states = np.average(saved_particles, weights=weights, axis=1)
+        difference = saved_particles - states[:, np.newaxis, :]
+        outer = difference[:, :, np.newaxis, :] * difference[:, :, :, np.newaxis]
+        weights = np.repeat(weights[:, :, :, np.newaxis], 7, axis=3)
+        all_vars = np.average(
+            (outer) ** 2,
+            weights=weights,
+            axis=1,
+        )
+
     else:
         uex_func = utils.gen_uex_func(uex_const)
         PN_func = utils.gen_PN_func(PN_const)
@@ -79,10 +90,12 @@ def worker(task):
             num_states=num_states, model=model, ts_meas=dtmeas
         )
         sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
-        saved_state, _, _, _, _, _, _, _, _, _ = sim.run()
+        saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = saved_state[:, -1]
+        states = saved_state
+        all_vars = saved_noise_var
 
-    return SI_est
+    return SI_est, states, all_vars
 
 
 def main():
@@ -90,6 +103,9 @@ def main():
         SI_ests = np.load("variables/SI_ests_augment_static_04.npy")
         SI_errs = np.load("variables/SI_errs_augment_static_04.npy")
         SI_true_arr = np.load("variables/SI_true_arr_augment_static_04.npy")
+        states = np.load("variables/states_augment_static_04.npy")
+        all_vars = np.load("variables/vars_augment_static_04.npy")
+
         print("Loaded variables from previous run")
     except Exception:
         with open("../config.toml", "rb") as f:
@@ -103,9 +119,7 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
-        x_max = cfg[root_module]["x_max"]
-        u_en_max = cfg[root_module]["u_en_max"]
-        log_sigma_SI = cfg[root_module]["log_sigma_SI"]
+        SI_process_noise = cfg[root_module]["SI_process_noise"]
 
         curr_module = "04"
         sim_hours = cfg[curr_module]["sim_hours"]
@@ -140,16 +154,18 @@ def main():
         SI_ests = np.zeros((num_deviations, num_filters, num_patients, len(t)))
         SI_errs = np.zeros_like(SI_ests)
         SI_true_arr = np.zeros((num_patients, len(t)))
+        states = np.zeros((num_deviations, num_filters, num_patients, len(t), 7))
+        all_vars = np.zeros((num_deviations, num_filters, num_patients, len(t), 7, 7))
 
         process_noises = np.asarray(
             [
-                (process_noise_factor * x_max[0]) ** 2,
-                (process_noise_factor * x_max[1]) ** 2,
-                (process_noise_factor * x_max[2]) ** 2,
-                (process_noise_factor * x_max[3]) ** 2,
-                (process_noise_factor * x_max[4]) ** 2,
-                (process_noise_factor * u_en_max) ** 2,
-                (process_noise_factor * log_sigma_SI) ** 2,
+                (process_noise_factor * 1),
+                (process_noise_factor * 1),
+                (process_noise_factor * 1),
+                (process_noise_factor * 1),
+                (process_noise_factor * 1),
+                (process_noise_factor * 1),
+                (SI_process_noise),
             ]
         )
 
@@ -167,7 +183,7 @@ def main():
             P1_0 = patient_data[i]["P1"][0]
             P2_0 = patient_data[i]["P2"][0]
             SI_true = patient_data[i]["SI"]
-            SI_true_arr[i,:] = SI_true
+            SI_true_arr[i, :] = SI_true
             SI_0 = patient_data[i]["SI"][0]
             y0 = [G_0, I_0, Q_0, P1_0, P2_0]
             for k in range(num_deviations):
@@ -176,7 +192,9 @@ def main():
                     y0,
                     [
                         ICINGTrue.params["k1"]
-                        * np.exp(-y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]),
+                        * np.exp(
+                            -y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]
+                        ),
                         SI_0,
                     ],
                 )
@@ -231,14 +249,18 @@ def main():
                 with Pool(processes=n_workers) as p:
                     results = p.map(worker, tasks)
 
-                for j, SI_est in enumerate(results):
+                for j, (SI_est, all_state, all_var) in enumerate(results):
                     SI_ests[k, j, i, :] = SI_est
                     SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
+                    states[k, j, i, :, :] = all_state
+                    all_vars[k, j, i, :, :, :] = all_var
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
         np.save("variables/SI_ests_augment_static_04", SI_ests)
+        np.save("variables/vars_augment_static_04", all_vars)
+        np.save("variables/states_augment_static_04", states)
         np.save("variables/SI_errs_augment_static_04", SI_errs)
         np.save("variables/SI_true_arr_augment_static_04", SI_true_arr)
 

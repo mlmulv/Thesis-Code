@@ -3,6 +3,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
+import tomllib
 from matplotlib.ticker import FuncFormatter
 
 import utils
@@ -22,6 +23,13 @@ class BootstrapParticleFilter:
         self.resampling_method = resampling_method
         self.Ts_meas = Ts_meas
 
+        with open("../config.toml", "rb") as f:
+            cfg = tomllib.load(f)
+        root_module = "global"
+        self.SI_pf_covar = cfg[root_module]["SI_pf_covar"]
+        self.init_cov = cfg[root_module]["init_cov"]
+        self.init_cov_scale = cfg[root_module]["init_cov_scale"]
+
         # Initialise particles and weights
         self.particles = np.zeros((num_particles, num_states))
         self.initialise_particles()
@@ -33,11 +41,27 @@ class BootstrapParticleFilter:
             num_particles / 2
         )  # Resample when effective sample size is less than half the number of particles
 
+    def draw_initial_state(self):
+        if self.model.SI_augment:
+            noise_vars = self.init_cov_scale * np.diag(
+                np.append(self.init_cov, self.SI_pf_covar)
+            )
+            initial_state_logSI = self.model.initial_state.copy()
+            initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
+            random_state = rng.multivariate_normal(
+                mean=initial_state_logSI[:, 0], cov=noise_vars
+            )
+            random_state[-1] = np.exp(random_state[-1])
+            return random_state
+        else:
+            noise_vars = self.init_cov_scale * np.diag(self.init_cov)
+            return rng.multivariate_normal(
+                mean=self.model.initial_state[:, 0], cov=noise_vars
+            )
+
     def initialise_particles(self):
         for i in range(self.num_particles):
-            self.particles[i, :] = self.model.draw_initial_state()
-            if self.model.SI_augment:
-                self.particles[i,-1] = np.exp(self.particles[i,-1])
+            self.particles[i, :] = self.draw_initial_state()
         # self.step_counter = 0
 
     def get_weights(self):
