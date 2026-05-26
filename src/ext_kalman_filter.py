@@ -17,6 +17,7 @@ class ExtendedKalmanFilter:
         self.init_cov = cfg[root_module]["init_cov"]
         self.u_en_max = cfg[root_module]["u_en_max"]
         self.SI_ekf_covar = cfg[root_module]["SI_ekf_covar"]
+        self.SI_Q_ekf = cfg[root_module]["SI_Q_ekf"]
 
         self.process_noise_factor = cfg[root_module]["process_noise_factor"]
         self.init_cov_scale = cfg[root_module]["init_cov_scale"]
@@ -27,7 +28,9 @@ class ExtendedKalmanFilter:
             noise_vars = self.init_cov_scale * np.diag(
                 np.append(self.init_cov, self.SI_ekf_covar)
             )
-            self.Q = np.diag(self.model.process_noise_var)
+            self.Q = np.diag(
+                np.append(self.model.process_noise_var[:-1], self.SI_Q_ekf)
+            )
         else:
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
             self.Q = np.diag(self.model.process_noise_var)
@@ -92,7 +95,7 @@ class ExtendedKalmanFilter:
 
         if self.SI_augment:
             # SI equation
-            f_model_func[6, 6] = 1
+            f_model_func[6, 6] = 1 + dt
 
         return f_model_func
 
@@ -203,7 +206,12 @@ class ExtendedKalmanFilter:
                     state_next, noise_var_next = self.filter.filter_iteration(
                         state, noise_var, ti, curr_SI=self.SI_fixed
                     )
-
+                if ti < 25.0:
+                    print(ti)
+                    print(state_next)
+                    print(noise_var_next)
+                # if ti < 10.0:
+                #     print(noise_var_next)
                 saved_state[idx], saved_noise_var[idx] = (
                     state_next[:, 0],
                     noise_var_next[:, 0],
