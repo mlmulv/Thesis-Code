@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import scipy as sp
 import numpy as np
 import tomllib
 
@@ -95,7 +96,7 @@ class ExtendedKalmanFilter:
 
         if self.SI_augment:
             # SI equation
-            f_model_func[6, 6] = 1 + dt
+            f_model_func[6, 6] = 1
 
         return f_model_func
 
@@ -121,11 +122,22 @@ class ExtendedKalmanFilter:
             )
             + self.R
         )
-        K = np.matmul(
-            noise_var_predict, np.matmul(self.h_model_func.T, np.linalg.inv(S))
-        )
+        # K = np.matmul(
+        #     noise_var_predict, np.matmul(self.h_model_func.T, np.linalg.inv(S))
+        # )
+        K = sp.linalg.solve(
+            S, np.matmul(self.h_model_func, noise_var_predict), assume_a="pos"
+        ).T
         v = np.array([y - state_predict[0]])
         state_update = state_predict + np.matmul(K, v)
+        if state_update[-1, 0] < 0:
+            print("S: ", S)
+            print("K: ", K)
+            print("v: ", v)
+            print("K@v: ", np.matmul(K, v))
+            print("m-: ", state_predict)
+            print("P-: ", noise_var_predict)
+            print("P- cond: ", np.linalg.cond(noise_var_predict))
         noise_var_update = noise_var_predict - np.matmul(K, np.matmul(S, K.T))
         if not output_params:
             return state_update, noise_var_update
@@ -150,7 +162,6 @@ class ExtendedKalmanFilter:
     def filter_iteration(self, state, noise_var, t, yk=None, curr_SI=None):
         # Make prediction
         state_next, noise_var_next = self.filter_predict(state, noise_var, t, curr_SI)
-
         # if there is a measurement, update filter
         if yk is not None:
             self.t_last_measurement = t
@@ -206,16 +217,19 @@ class ExtendedKalmanFilter:
                     state_next, noise_var_next = self.filter.filter_iteration(
                         state, noise_var, ti, curr_SI=self.SI_fixed
                     )
-                if ti < 25.0:
-                    print(ti)
-                    print(state_next)
-                    print(noise_var_next)
-                # if ti < 10.0:
-                #     print(noise_var_next)
                 saved_state[idx], saved_noise_var[idx] = (
                     state_next[:, 0],
-                    noise_var_next[:, 0],
+                    noise_var_next,
                 )
+
+                # if self.filter.model.SI_augment:
+                #     if state_next[-1] < 0:
+                #         for j in range(idx-4, idx+1):
+                #             print("State: ", saved_state[j])
+                #             print("Covariance: ", saved_noise_var[j])
+
+                #         print("Time: ", ti)
+
                 G_est[idx] = state_next[0, 0]
                 Q_est[idx] = state_next[1, 0]
                 I_est[idx] = state_next[2, 0]

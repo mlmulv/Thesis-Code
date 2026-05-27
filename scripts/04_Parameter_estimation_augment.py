@@ -61,16 +61,17 @@ def worker(task):
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
 
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
+        all_vars = np.average((saved_particles[:,:,-1] - SI_est[:, np.newaxis])**2, weights=saved_weights, axis=1)
         weights = np.repeat(saved_weights[:, :, np.newaxis], 7, axis=2)
         states = np.average(saved_particles, weights=weights, axis=1)
-        difference = saved_particles - states[:, np.newaxis, :]
-        outer = difference[:, :, np.newaxis, :] * difference[:, :, :, np.newaxis]
-        weights = np.repeat(weights[:, :, :, np.newaxis], 7, axis=3)
-        all_vars = np.average(
-            (outer) ** 2,
-            weights=weights,
-            axis=1,
-        )
+        # difference = saved_particles - states[:, np.newaxis, :]
+        # outer = difference[:, :, np.newaxis, :] * difference[:, :, :, np.newaxis]
+        # weights = np.repeat(weights[:, :, :, np.newaxis], 7, axis=3)
+        # all_vars = np.average(
+        #     (outer) ** 2,
+        #     weights=weights,
+        #     axis=1,
+        # )
 
     else:
         uex_func = utils.gen_uex_func(uex_const)
@@ -93,7 +94,7 @@ def worker(task):
         saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = saved_state[:, -1]
         states = saved_state
-        all_vars = saved_noise_var
+        all_vars = saved_noise_var[:,-1,-1]
 
     return SI_est, states, all_vars
 
@@ -155,17 +156,17 @@ def main():
         SI_errs = np.zeros_like(SI_ests)
         SI_true_arr = np.zeros((num_patients, len(t)))
         states = np.zeros((num_deviations, num_filters, num_patients, len(t), 7))
-        all_vars = np.zeros((num_deviations, num_filters, num_patients, len(t), 7, 7))
+        all_vars = np.zeros((num_deviations, num_filters, num_patients, len(t)))
 
         process_noises = np.asarray(
             [
-                (process_noise_factor * 1),
-                (process_noise_factor * 1),
-                (process_noise_factor * 1),
-                (process_noise_factor * 1),
-                (process_noise_factor * 1),
-                (process_noise_factor * 1),
-                (SI_process_noise),
+                (1) * process_noise_factor,
+                (100) * process_noise_factor,
+                (100) * process_noise_factor,
+                (0.5) * process_noise_factor,
+                (25) * process_noise_factor,
+                (4) * process_noise_factor,
+                (SI_process_noise) * process_noise_factor,
             ]
         )
 
@@ -253,7 +254,7 @@ def main():
                     SI_ests[k, j, i, :] = SI_est
                     SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
                     states[k, j, i, :, :] = all_state
-                    all_vars[k, j, i, :, :, :] = all_var
+                    all_vars[k, j, i, :] = all_var
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 

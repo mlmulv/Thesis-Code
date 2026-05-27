@@ -140,14 +140,15 @@ def main():
 
         process_noises = np.asarray(
             [
-                (process_noise_factor),
-                (process_noise_factor),
-                (process_noise_factor),
-                (process_noise_factor),
-                (process_noise_factor),
-                (process_noise_factor),
+                (0.005) * process_noise_factor,
+                (.1) * process_noise_factor,
+                (.1) * process_noise_factor,
+                (0.0005) * process_noise_factor,
+                (.025) * process_noise_factor,
+                (0.004) * process_noise_factor,
             ]
         )
+        
 
         num_filters = (
             len(num_particles) + 1

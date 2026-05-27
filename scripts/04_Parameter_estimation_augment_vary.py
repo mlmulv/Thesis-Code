@@ -60,9 +60,10 @@ def worker(task):
         sim = PF_filter.simulate(t, t_meas, G_meas, PF_filter)
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
-        SI_est_expanded = np.repeat(SI_est[:, None], saved_particles.shape[1], axis=1)
         SI_var = np.average(
-            (saved_particles[:, :, -1] - SI_est_expanded) ** 2, weights=saved_weights, axis=1
+            (saved_particles[:, :, -1] - SI_est[:, np.newaxis]) ** 2,
+            weights=saved_weights,
+            axis=1,
         )
     else:
         uex_func = utils.gen_uex_func(uex_const)
@@ -84,7 +85,7 @@ def worker(task):
         sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
         saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
         SI_est = saved_state[:, -1]
-        SI_var = saved_noise_var[:,-1,-1]
+        SI_var = saved_noise_var[:, -1, -1]
 
     return SI_est, SI_var
 
@@ -108,14 +109,12 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
-        x_max = cfg[root_module]["x_max"]
-        u_en_max = cfg[root_module]["u_en_max"]
-        log_sigma_SI = cfg[root_module]["log_sigma_SI"]
 
         curr_module = "04"
         sim_hours = cfg[curr_module]["sim_hours"]
         num_patients = cfg[curr_module]["num_patients"]
-        process_noise_factor = cfg[curr_module]["process_noise_factor_vary"]
+        process_noise_factor = cfg[curr_module]["process_noise_factor"]
+        SI_process_noise = cfg[root_module]["SI_process_noise"]
         num_particles = np.asarray(cfg[curr_module]["num_particles"])
         deviations = cfg[curr_module]["deviations"]
         change_SI = cfg[curr_module]["change_SI"]
@@ -153,13 +152,13 @@ def main():
 
         process_noises = np.asarray(
             [
-                (process_noise_factor * 1) ** 2,
-                (process_noise_factor * 1) ** 2,
-                (process_noise_factor * 1) ** 2,
-                (process_noise_factor * 1) ** 2,
-                (process_noise_factor * 1) ** 2,
-                (process_noise_factor * 1) ** 2,
-                () ** 2,
+                (1) * process_noise_factor,
+                (100) * process_noise_factor,
+                (100) * process_noise_factor,
+                (0.5) * process_noise_factor,
+                (25) * process_noise_factor,
+                (4) * process_noise_factor,
+                (SI_process_noise) * process_noise_factor,
             ]
         )
 
