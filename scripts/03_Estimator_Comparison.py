@@ -139,15 +139,16 @@ def main():
         ICINGTrue = icing_true.ICINGTrue()
 
         process_noises = np.asarray(
-            [
-                (0.005) * process_noise_factor,
-                (.1) * process_noise_factor,
-                (.1) * process_noise_factor,
-                (0.0005) * process_noise_factor,
-                (.025) * process_noise_factor,
-                (0.004) * process_noise_factor,
-            ]
-        )
+                [
+                    (1) * process_noise_factor,
+                    (10) * process_noise_factor,
+                    (10) * process_noise_factor,
+                    (0.5) * process_noise_factor,
+                    (2.5) * process_noise_factor,
+                    (1e-8) * process_noise_factor,
+                ]
+            )
+
         
 
         num_filters = (

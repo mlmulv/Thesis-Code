@@ -153,11 +153,11 @@ def main():
         process_noises = np.asarray(
             [
                 (1) * process_noise_factor,
-                (100) * process_noise_factor,
-                (100) * process_noise_factor,
+                (10) * process_noise_factor,
+                (10) * process_noise_factor,
                 (0.5) * process_noise_factor,
-                (25) * process_noise_factor,
-                (4) * process_noise_factor,
+                (2.5) * process_noise_factor,
+                (1e-8) * process_noise_factor,
                 (SI_process_noise) * process_noise_factor,
             ]
         )

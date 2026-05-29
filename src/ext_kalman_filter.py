@@ -131,13 +131,15 @@ class ExtendedKalmanFilter:
         v = np.array([y - state_predict[0]])
         state_update = state_predict + np.matmul(K, v)
         if state_update[-1, 0] < 0:
-            print("S: ", S)
-            print("K: ", K)
-            print("v: ", v)
-            print("K@v: ", np.matmul(K, v))
-            print("m-: ", state_predict)
-            print("P-: ", noise_var_predict)
-            print("P- cond: ", np.linalg.cond(noise_var_predict))
+            # print("S: ", S)
+            # print("K: ", K)
+            # print("v: ", v)
+            # print("K@v: ", np.matmul(K, v))
+            # print("m-: ", state_predict)
+            # print("P-: ", noise_var_predict)
+            # print("P- cond: ", np.linalg.cond(noise_var_predict))
+            print("Negative SI detected in update. Disregarding SI update")
+            state_update[-1, 0] = state_predict[-1, 0]
         noise_var_update = noise_var_predict - np.matmul(K, np.matmul(S, K.T))
         if not output_params:
             return state_update, noise_var_update
@@ -221,14 +223,6 @@ class ExtendedKalmanFilter:
                     state_next[:, 0],
                     noise_var_next,
                 )
-
-                # if self.filter.model.SI_augment:
-                #     if state_next[-1] < 0:
-                #         for j in range(idx-4, idx+1):
-                #             print("State: ", saved_state[j])
-                #             print("Covariance: ", saved_noise_var[j])
-
-                #         print("Time: ", ti)
 
                 G_est[idx] = state_next[0, 0]
                 Q_est[idx] = state_next[1, 0]
