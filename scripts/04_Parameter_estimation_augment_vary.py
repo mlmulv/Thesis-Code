@@ -111,7 +111,7 @@ def main():
         y0 = cfg[root_module]["y0"]
 
         curr_module = "04"
-        sim_hours = cfg[curr_module]["sim_hours"]
+        sim_hours = cfg[curr_module]["sim_hours_vary"]
         num_patients = cfg[curr_module]["num_patients"]
         process_noise_factor = cfg[curr_module]["process_noise_factor"]
         SI_process_noise = cfg[root_module]["SI_process_noise"]
