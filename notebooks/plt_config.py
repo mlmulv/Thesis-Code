@@ -17,6 +17,9 @@ base_params = {
     'ytick.labelsize': SMALL_SIZE,  
     'legend.fontsize': MEDIUM_SIZE,  
     'figure.titlesize': LARGE_SIZE,  
+    'lines.linewidth': 1.5,          
+    'lines.markersize': 5,           
+    'patch.linewidth': 0.5,          
 }
 
 plt.rcParams.update(base_params)
