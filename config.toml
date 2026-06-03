@@ -55,13 +55,13 @@ dev_perc = [-25, -10, -2, 2, 10, 25]
 [04]
 sim_hours = 60
 sim_hours_vary = 80
-num_patients = 1
-deviations = [0.9, 1.1]
-dev_perc = [-10, 10]
+num_patients = 1000
+deviations = [1.1]
+dev_perc = [10]
 SI_scale = 0.14
 process_noise_factor = 1e-3
 # num_particles = [100, 200, 300, 400, 500, 750, 1000, 1500, 2000]
-num_particles = [750, 1000, 1500]
+num_particles = [1000]
 low_perc = 5.0
 high_perc = 95.0
 CI = 90

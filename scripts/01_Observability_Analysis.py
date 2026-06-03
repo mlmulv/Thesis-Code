@@ -14,7 +14,7 @@ import utils
 
 def main():
     try:
-        min_eig_values = np.load("variables/min_eig_values_01.npy")
+        eig_values = np.load("variables/eig_values_01.npy")
         print("Previous run variables exist")
     except Exception:
         with open("../config.toml", "rb") as f:
@@ -57,7 +57,7 @@ def main():
         t = np.arange(
             0, sim_hours * 60 + 1, dt
         )  # 0 to 60 hours with minute-level resolution
-        min_eig_values = np.zeros((num_patients,))
+        eig_values = np.zeros((num_patients,5))
 
         time_start = time.time()
         for i in range(num_patients):
@@ -90,10 +90,10 @@ def main():
                 SI_est=None,
             )
             W_O, eig_vals, eig_vectors = Gramian.gramian()
-            min_eig_values[i] = np.min(eig_vals)
+            eig_values[i,:] = eig_vals
 
         print("Done!")
-        np.save("variables/min_eig_values_01", min_eig_values)
+        np.save("variables/eig_values_01", eig_values)
 
 
 if __name__ == "__main__":
