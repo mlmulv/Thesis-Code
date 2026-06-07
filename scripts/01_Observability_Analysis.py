@@ -14,6 +14,7 @@ import utils
 
 def main():
     try:
+        diag_values = np.load("variables/diag_values_01.npy")
         eig_values = np.load("variables/eig_values_01.npy")
         print("Previous run variables exist")
     except Exception:
@@ -58,6 +59,7 @@ def main():
             0, sim_hours * 60 + 1, dt
         )  # 0 to 60 hours with minute-level resolution
         eig_values = np.zeros((num_patients,5))
+        diag_values = np.zeros_like(eig_values)
 
         time_start = time.time()
         for i in range(num_patients):
@@ -91,8 +93,10 @@ def main():
             )
             W_O, eig_vals, eig_vectors = Gramian.gramian()
             eig_values[i,:] = eig_vals
+            diag_values[i,:] = np.diag(W_O)
 
         print("Done!")
+        np.save("variables/diag_values_01", diag_values)
         np.save("variables/eig_values_01", eig_values)
 
 

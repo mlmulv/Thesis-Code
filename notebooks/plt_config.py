@@ -15,7 +15,7 @@ base_params = {
     'axes.labelsize': MEDIUM_SIZE,   
     'xtick.labelsize': SMALL_SIZE,   
     'ytick.labelsize': SMALL_SIZE,  
-    'legend.fontsize': MEDIUM_SIZE,  
+    'legend.fontsize': SMALL_SIZE,  
     'figure.titlesize': LARGE_SIZE,  
     'lines.linewidth': 1.5,          
     'lines.markersize': 5,           
