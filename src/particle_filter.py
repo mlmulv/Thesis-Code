@@ -46,12 +46,12 @@ class BootstrapParticleFilter:
             noise_vars = self.init_cov_scale * np.diag(
                 np.append(self.init_cov, self.SI_pf_covar)
             )
-            initial_state_logSI = self.model.initial_state.copy()
-            initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
+            # initial_state_logSI = self.model.initial_state.copy()
+            # initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
             random_state = rng.multivariate_normal(
-                mean=initial_state_logSI[:, 0], cov=noise_vars
+                mean=self.model.initial_state[:, 0], cov=noise_vars
             )
-            random_state[-1] = np.exp(random_state[-1])
+            # random_state[-1] = np.exp(random_state[-1])
             return random_state
         else:
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
@@ -169,6 +169,7 @@ class BootstrapParticleFilter:
     def filter(self):
         weights = self.get_weights()
         x_mean = np.average(self.particles, weights=weights, axis=0)
+        # print(x_mean)
         x_var = np.average((self.particles - x_mean) ** 2, weights=weights, axis=0)
         return x_mean, np.sqrt(x_var)
 

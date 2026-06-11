@@ -73,7 +73,8 @@ class ICINGModel:
 
         if self.SI_augment:
             # x = [G, Q, I, P1, P2, Uen, SI]
-            G, Q, I, P1, P2, Uen, SI = x[:, 0]  # noqa: E741
+            G, Q, I, P1, P2, Uen, SI_log = x[:, 0]  # noqa: E741
+            SI = np.exp(SI_log)
         else:
             # x = [G, Q, I, P1, P2, Uen]
             G, Q, I, P1, P2, Uen = x[:, 0]  # noqa: E741
@@ -117,7 +118,7 @@ class ICINGModel:
         )
         if self.SI_augment:
             # Update SI
-            x_next[6, 0] = np.log(SI)  # convert to log domain
+            x_next[6, 0] = SI_log  # leave in ln domain
 
         # Add process noise
         w = rng.multivariate_normal(
@@ -125,11 +126,11 @@ class ICINGModel:
             cov=np.diag(self.process_noise_var),
         )
         w = np.expand_dims(w, axis=1)
-        if self.SI_augment:
-            x_next_noise = x_next + w
-            x_next_noise[-1, 0] = np.exp(x_next_noise[-1, 0])
-        else:
-            x_next_noise = x_next + w
+        # if self.SI_augment:
+        #     x_next_noise = x_next + w
+        #     # x_next_noise[-1, 0] = np.exp(x_next_noise[-1, 0])
+        # else:
+        x_next_noise = x_next + w
         return x_next_noise
 
     def observation(self, x, t):

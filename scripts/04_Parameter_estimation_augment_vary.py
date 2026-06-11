@@ -92,10 +92,10 @@ def worker(task):
 
 def main():
     try:
-        SI_ests = np.load("variables/SI_ests_augment_vary_04.npy")
-        SI_vars = np.load("variables/SI_vars_augment_vary_04.npy")
-        SI_errs = np.load("variables/SI_errs_augment_vary_04.npy")
-        SI_true_arr = np.load("variables/SI_true_arr_augment_vary_04.npy")
+        SI_ests = np.load("variables/SI_ests_augment_vary_04_temp.npy")
+        SI_vars = np.load("variables/SI_vars_augment_vary_04_temp.npy")
+        SI_errs = np.load("variables/SI_errs_augment_vary_04_temp.npy")
+        SI_true_arr = np.load("variables/SI_true_arr_augment_vary_04_temp.npy")
         print("Loaded variables from previous run")
     except Exception:
         with open("../config.toml", "rb") as f:
@@ -158,13 +158,15 @@ def main():
                 (0.005) * process_noise_factor,
                 (.025) * process_noise_factor,
                 (1e-8) * process_noise_factor,
-                (SI_process_noise) * process_noise_factor,
+                SI_process_noise,
             ]
         )
 
         time_start = time.time()
         for i in range(num_patients):
-            print(f"Patient {i + 1} / {num_patients}")
+            if (i + 1) % 10 == 0:
+                print(f"Patient {i + 1} / {num_patients}")
+                print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
             G_meas = patient_data[i]["BG_meas"]
             uex_const = patient_data[i]["uex"][0]
             SI_const = patient_data[i]["SI"][0]
@@ -196,7 +198,7 @@ def main():
 
                 tasks = []
                 for j in range(num_filters):
-                    if j != 0:  # PF
+                    if j != 0:  # PFk
                         tasks.append(
                             (
                                 "PF",
@@ -218,25 +220,26 @@ def main():
                         )
 
                     else:  # EKF
-                        tasks.append(
-                            (
-                                "EKF",
-                                0,
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
-                        )
+                        noOp = True
+                        # tasks.append(
+                        #     (
+                        #         "EKF",
+                        #         0,
+                        #         num_states,
+                        #         dt,
+                        #         dtmeas,
+                        #         t,
+                        #         t_meas,
+                        #         G_meas,
+                        #         initial_state,
+                        #         process_noises,
+                        #         meas_noise_std,
+                        #         uex_const,
+                        #         PN_const,
+                        #         D_const,
+                        #         SI_const,
+                        #     )
+                        # )
                 n_workers = min(len(tasks), cpu_count())
 
                 with Pool(processes=n_workers) as p:
@@ -245,15 +248,14 @@ def main():
                 for j, (SI_est, SI_var) in enumerate(results):
                     SI_ests[k, j, i, :] = SI_est
                     SI_vars[k, j, i, :] = SI_var
-                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
+                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / - SI_true
 
-            print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
-        np.save("variables/SI_ests_augment_vary_04", SI_ests)
-        np.save("variables/SI_vars_augment_vary_04", SI_vars)
-        np.save("variables/SI_errs_augment_vary_04", SI_errs)
-        np.save("variables/SI_true_arr_augment_vary_04", SI_true_arr)
+        np.save("variables/SI_ests_augment_vary_04_temp", SI_ests)
+        np.save("variables/SI_vars_augment_vary_04_temp", SI_vars)
+        np.save("variables/SI_errs_augment_vary_04_temp", SI_errs)
+        np.save("variables/SI_true_arr_augment_vary_04_temp", SI_true_arr)
 
 
 if __name__ == "__main__":

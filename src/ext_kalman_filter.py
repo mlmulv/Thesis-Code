@@ -63,8 +63,10 @@ class ExtendedKalmanFilter:
         I = m[2, 0]  # noqa: E741
         P2 = m[4, 0]
         if self.SI_augment:
-            SI = m[6, 0]
+            SI_log = m[6, 0]
+            SI = np.exp(SI_log) # converting from ln to normal
         else:
+            
             SI = curr_SI
 
         # Jacobian Matrix Calculation
@@ -72,7 +74,7 @@ class ExtendedKalmanFilter:
         f_model_func[0, 0] = 1 - dt * pG - dt * SI * Q / (1 + alphaG * Q)
         f_model_func[0, 1] = -dt * SI * G / (1 + alphaG * Q) ** 2
         if self.SI_augment:
-            f_model_func[0, 6] = -dt * G * Q / (1 + alphaG * Q)
+            f_model_func[0, 6] = -dt * SI * G * Q / (1 + alphaG * Q)
 
         # Q equation
         f_model_func[1, 1] = 1 - dt * nI - dt * nC / (1 + alphaG * Q) ** 2
@@ -125,21 +127,23 @@ class ExtendedKalmanFilter:
         # K = np.matmul(
         #     noise_var_predict, np.matmul(self.h_model_func.T, np.linalg.inv(S))
         # )
+        # print(state_predict)
+        # print(noise_var_predict)
         K = sp.linalg.solve(
             S, np.matmul(self.h_model_func, noise_var_predict), assume_a="pos"
         ).T
         v = np.array([y - state_predict[0]])
         state_update = state_predict + np.matmul(K, v)
-        if state_update[-1, 0] < 0:
-            # print("S: ", S)
-            # print("K: ", K)
-            # print("v: ", v)
-            # print("K@v: ", np.matmul(K, v))
-            # print("m-: ", state_predict)
-            # print("P-: ", noise_var_predict)
-            # print("P- cond: ", np.linalg.cond(noise_var_predict))
-            print("Negative SI detected in update. Disregarding SI update")
-            state_update[-1, 0] = state_predict[-1, 0]
+        # if state_update[-1, 0] < 0:
+        #     # print("S: ", S)
+        #     # print("K: ", K)
+        #     # print("v: ", v)
+        #     # print("K@v: ", np.matmul(K, v))
+        #     # print("m-: ", state_predict)
+        #     # print("P-: ", noise_var_predict)
+        #     # print("P- cond: ", np.linalg.cond(noise_var_predict))
+        #     print("Negative SI detected in update. Disregarding SI update")
+        #     state_update[-1, 0] = state_predict[-1, 0]
         noise_var_update = noise_var_predict - np.matmul(K, np.matmul(S, K.T))
         if not output_params:
             return state_update, noise_var_update

@@ -137,7 +137,7 @@ class PatientCohort:
                 "uex": np.asarray([uex_func(t) for t in self.t]),
                 "D": np.asarray([D_func(t) for t in self.t]),
                 "PN": np.asarray([PN_func(t) for t in self.t]),
-                "SI": np.asarray([SI_func(t) for t in self.t]),
+                "SI": np.log(np.asarray([SI_func(t) for t in self.t])),
             }
             data.append(patient_info)
         return data
