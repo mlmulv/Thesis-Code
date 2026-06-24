@@ -14,9 +14,9 @@ y0 = [7.357, 133.115, 98.203, 8.657, 43.283]
 init_cov_scale = 1
 init_cov = [1, 3, 3, 1, 2, 1]
 process_noise_factor =  0.0083
-SI_process_noise = 0.00168 # 1 / 120	
-SI_Q_ekf = 0.00168 # exp(2*ln(1+0.2)/120) - exp(...)
-SI_ekf_covar = 1.6e-11# 1e-4^2 * Q_ekf
+SI_process_noise = 1e-5	
+SI_Q_ekf = 1e-5 # (exp(process_noise) - 1)(exp(process_noise))
+SI_ekf_covar = 1e-9 # 1e-4*Q_ekf
 SI_pf_covar = 0.03 
 
 [00]
@@ -55,7 +55,7 @@ dev_perc = [-25, -10, -2, 2, 10, 25]
 [04]
 sim_hours = 60
 sim_hours_vary = 60
-num_patients = 10
+num_patients = 5
 deviations = [1.1]
 dev_perc = [10]
 SI_scale = 0.14

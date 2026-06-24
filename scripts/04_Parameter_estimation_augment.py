@@ -205,26 +205,26 @@ def main():
                 tasks = []
                 for j in range(num_filters):
                     if j != 0:  # PF
-                        noOp = True
-#                        tasks.append(
-#                            (
-#                                "PF",
-#                                num_particles[j - 1],
-#                                num_states,
-#                                dt,
-#                                dtmeas,
-#                                t,
-#                                t_meas,
-#                                G_meas,
-#                                initial_state,
-#                                process_noises,
-#                                meas_noise_std,
-#                                uex_const,
-#                                PN_const,
-#                                D_const,
-#                                SI_const,
-#                            )
-#                        )
+                        # noOp = True
+                       tasks.append(
+                           (
+                               "PF",
+                               num_particles[j - 1],
+                               num_states,
+                               dt,
+                               dtmeas,
+                               t,
+                               t_meas,
+                               G_meas,
+                               initial_state,
+                               process_noises,
+                               meas_noise_std,
+                               uex_const,
+                               PN_const,
+                               D_const,
+                               SI_const,
+                           )
+                       )
 
                     else:  # EKF
                         tasks.append(

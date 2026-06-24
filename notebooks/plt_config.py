@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
-#import scienceplots  # noqa: F401
-#plt.style.use("science")
-#plt.style.use("grid")
-#plt.style.use('bright')
+import scienceplots  # noqa: F401
+plt.style.use("science")
+plt.style.use("grid")
+plt.style.use('bright')
 
 SMALL_SIZE = 10
 MEDIUM_SIZE = 12

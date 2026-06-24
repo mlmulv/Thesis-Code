@@ -111,7 +111,7 @@ class ExtendedKalmanFilter:
         state_predict = self.model.state_update(state_update, u_vec, t, curr_SI)
         if self.SI_augment:
             Q_transform = self.Q
-            Q_transform[-1,-1] = self.Q[-1,-1]*((state_update[-1,0])**2)
+            Q_transform[-1,-1] = self.Q[-1,-1]*(state_update[-1,0])
             noise_var_predict = (
                 np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T))
                 + Q_transform

@@ -158,7 +158,7 @@ def main():
                 (0.005) * process_noise_factor,
                 (.025) * process_noise_factor,
                 (1e-8) * process_noise_factor,
-                (SI_process_noise) * process_noise_factor,
+                SI_process_noise,
             ]
         )
 
