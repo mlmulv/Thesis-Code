@@ -111,10 +111,18 @@ class ExtendedKalmanFilter:
         u_vec = self.model.get_inputs(t)
         f_model_func = self.calc_f_model_func(state_update, curr_SI)
         state_predict = self.model.state_update(state_update, u_vec, t, curr_SI)
-        noise_var_predict = (
-            np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T))
-            + self.Q
-        )
+        if self.SI_augment:
+            Q_transform = self.Q
+            Q_transform[-1,-1] = self.Q[-1,-1]*(state_update[-1,0])
+            noise_var_predict = (
+                np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T))
+                + Q_transform
+            )
+        else:
+            noise_var_predict = (
+                np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T))
+                + self.Q
+            )
         return state_predict, noise_var_predict
 
     def filter_update(self, state_predict, noise_var_predict, y, output_params=False):

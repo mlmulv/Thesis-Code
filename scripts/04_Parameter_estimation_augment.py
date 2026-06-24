@@ -166,7 +166,7 @@ def main():
                 (0.005) * process_noise_factor,
                 (.025) * process_noise_factor,
                 (1e-8) * process_noise_factor,
-                (SI_process_noise) * process_noise_factor,
+                (SI_process_noise),
             ]
         )
 
@@ -205,25 +205,26 @@ def main():
                 tasks = []
                 for j in range(num_filters):
                     if j != 0:  # PF
-                        tasks.append(
-                            (
-                                "PF",
-                                num_particles[j - 1],
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
-                        )
+                        # noOp = True
+                       tasks.append(
+                           (
+                               "PF",
+                               num_particles[j - 1],
+                               num_states,
+                               dt,
+                               dtmeas,
+                               t,
+                               t_meas,
+                               G_meas,
+                               initial_state,
+                               process_noises,
+                               meas_noise_std,
+                               uex_const,
+                               PN_const,
+                               D_const,
+                               SI_const,
+                           )
+                       )
 
                     else:  # EKF
                         tasks.append(
