@@ -18,8 +18,6 @@ class ExtendedKalmanFilter:
         self.init_cov = cfg[root_module]["init_cov"]
         self.u_en_max = cfg[root_module]["u_en_max"]
         self.SI_ekf_covar = cfg[root_module]["SI_ekf_covar"]
-        self.SI_Q_ekf = cfg[root_module]["SI_Q_ekf"]
-
         self.process_noise_factor = cfg[root_module]["process_noise_factor"]
         self.init_cov_scale = cfg[root_module]["init_cov_scale"]
 
@@ -29,9 +27,7 @@ class ExtendedKalmanFilter:
             noise_vars = self.init_cov_scale * np.diag(
                 np.append(self.init_cov, self.SI_ekf_covar)
             )
-            self.Q = np.diag(
-                np.append(self.model.process_noise_var[:-1], self.SI_Q_ekf)
-            )
+            self.Q = np.diag(self.model.process_noise_var)
         else:
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
             self.Q = np.diag(self.model.process_noise_var)
@@ -63,10 +59,8 @@ class ExtendedKalmanFilter:
         I = m[2, 0]  # noqa: E741
         P2 = m[4, 0]
         if self.SI_augment:
-            SI_log = m[6, 0]
-            SI = np.exp(SI_log) # converting from ln to normal
+            SI = m[6, 0]
         else:
-            
             SI = curr_SI
 
         # Jacobian Matrix Calculation
@@ -112,8 +106,8 @@ class ExtendedKalmanFilter:
         f_model_func = self.calc_f_model_func(state_update, curr_SI)
         state_predict = self.model.state_update(state_update, u_vec, t, curr_SI)
         if self.SI_augment:
-            Q_transform = self.Q
-            Q_transform[-1,-1] = self.Q[-1,-1]*(state_update[-1,0])
+            Q_transform = self.Q.copy()
+            Q_transform[-1, -1] = (state_update[-1, 0] ** 2) * Q_transform[-1, -1]
             noise_var_predict = (
                 np.matmul(f_model_func, np.matmul(noise_var_update, f_model_func.T))
                 + Q_transform

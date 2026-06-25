@@ -25,7 +25,7 @@ class PatientCohort:
         SI_params,
         y0,
         SI_piecewise_changes=None,
-        SI_scale = None
+        SI_scale=None,
     ):
         # Inputs
         self.num_patients = num_patients
@@ -85,10 +85,8 @@ class PatientCohort:
                 SI_next_const = SI_const.copy()
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
-                    SI_next_const = np.exp(
-                        sp.stats.norm.rvs(
-                            loc=np.log(SI_curr_const), scale=self.SI_scale
-                        )
+                    SI_next_const = SI_curr_const * (
+                        1 + sp.stats.norm.rvs(1, scale=self.SI_scale)
                     )
                     SI_const = np.append(SI_const, SI_next_const)
 
@@ -137,7 +135,7 @@ class PatientCohort:
                 "uex": np.asarray([uex_func(t) for t in self.t]),
                 "D": np.asarray([D_func(t) for t in self.t]),
                 "PN": np.asarray([PN_func(t) for t in self.t]),
-                "SI": np.log(np.asarray([SI_func(t) for t in self.t])),
+                "SI": np.asarray([SI_func(t) for t in self.t]),
             }
             data.append(patient_info)
         return data

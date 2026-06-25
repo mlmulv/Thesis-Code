@@ -152,13 +152,13 @@ def main():
 
         process_noises = np.asarray(
             [
-                (.005) * process_noise_factor,
-                (1) * process_noise_factor,
-                (1) * process_noise_factor,
-                (0.005) * process_noise_factor,
-                (.025) * process_noise_factor,
-                (1e-8) * process_noise_factor,
-                SI_process_noise,
+                (0.0289) * process_noise_factor,
+                (5.0625) * process_noise_factor,
+                (7.5625) * process_noise_factor,
+                (0.0144) * process_noise_factor,
+                (0.36) * process_noise_factor,
+                (1e-3) * process_noise_factor,
+                (SI_process_noise) * process_noise_factor,
             ]
         )
 
@@ -198,7 +198,8 @@ def main():
 
                 tasks = []
                 for j in range(num_filters):
-                    if j != 0:  # PFk
+                    if j != 0:  # PF
+                        # noOp = True
                         tasks.append(
                             (
                                 "PF",
@@ -220,26 +221,25 @@ def main():
                         )
 
                     else:  # EKF
-                        noOp = True
-                        # tasks.append(
-                        #     (
-                        #         "EKF",
-                        #         0,
-                        #         num_states,
-                        #         dt,
-                        #         dtmeas,
-                        #         t,
-                        #         t_meas,
-                        #         G_meas,
-                        #         initial_state,
-                        #         process_noises,
-                        #         meas_noise_std,
-                        #         uex_const,
-                        #         PN_const,
-                        #         D_const,
-                        #         SI_const,
-                        #     )
-                        # )
+                        tasks.append(
+                            (
+                                "EKF",
+                                0,
+                                num_states,
+                                dt,
+                                dtmeas,
+                                t,
+                                t_meas,
+                                G_meas,
+                                initial_state,
+                                process_noises,
+                                meas_noise_std,
+                                uex_const,
+                                PN_const,
+                                D_const,
+                                SI_const,
+                            )
+                        )
                 n_workers = min(len(tasks), cpu_count())
 
                 with Pool(processes=n_workers) as p:
