@@ -160,12 +160,12 @@ def main():
 
         process_noises = np.asarray(
             [
-                (0.0289) * process_noise_factor,
-                (5.0625) * process_noise_factor,
-                (7.5625) * process_noise_factor,
-                (0.0144) * process_noise_factor,
-                (0.36) * process_noise_factor,
-                (1e-3) * process_noise_factor,
+                (0.005) * process_noise_factor,
+                (1) * process_noise_factor,
+                (1) * process_noise_factor,
+                (0.005) * process_noise_factor,
+                (0.025) * process_noise_factor,
+                (1e-8) * process_noise_factor,
                 (SI_process_noise) * process_noise_factor,
             ]
         )
@@ -265,6 +265,7 @@ def main():
         np.save("variables/states_augment_static_04", states)
         np.save("variables/SI_errs_augment_static_04", SI_errs)
         np.save("variables/SI_true_arr_augment_static_04", SI_true_arr)
+
 
 
 if __name__ == "__main__":

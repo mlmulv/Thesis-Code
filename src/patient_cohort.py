@@ -86,7 +86,7 @@ class PatientCohort:
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
                     SI_next_const = SI_curr_const * (
-                        1 + sp.stats.norm.rvs(1, scale=self.SI_scale)
+                        1 + sp.stats.norm.rvs(0, scale=self.SI_scale)
                     )
                     SI_const = np.append(SI_const, SI_next_const)
 
