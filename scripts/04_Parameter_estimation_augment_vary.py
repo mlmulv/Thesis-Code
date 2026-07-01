@@ -164,9 +164,7 @@ def main():
 
         time_start = time.time()
         for i in range(num_patients):
-            if (i + 1) % 10 == 0:
-                print(f"Patient {i + 1} / {num_patients}")
-                print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
+            print(f"Patient {i + 1} / {num_patients}")
             G_meas = patient_data[i]["BG_meas"]
             uex_const = patient_data[i]["uex"][0]
             SI_const = patient_data[i]["SI"][0]
@@ -250,6 +248,7 @@ def main():
                     SI_vars[k, j, i, :] = SI_var
                     SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / - SI_true
 
+            print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
         np.save("variables/SI_ests_augment_vary_04_temp", SI_ests)
