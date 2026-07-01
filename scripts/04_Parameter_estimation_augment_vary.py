@@ -219,25 +219,26 @@ def main():
                         )
 
                     else:  # EKF
-                        tasks.append(
-                            (
-                                "EKF",
-                                0,
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
-                        )
+                        noOp = True
+                        # tasks.append(
+                        #     (
+                        #         "EKF",
+                        #         0,
+                        #         num_states,
+                        #         dt,
+                        #         dtmeas,
+                        #         t,
+                        #         t_meas,
+                        #         G_meas,
+                        #         initial_state,
+                        #         process_noises,
+                        #         meas_noise_std,
+                        #         uex_const,
+                        #         PN_const,
+                        #         D_const,
+                        #         SI_const,
+                        #     )
+                        # )
                 n_workers = min(len(tasks), cpu_count())
 
                 with Pool(processes=n_workers) as p:
@@ -246,7 +247,7 @@ def main():
                 for j, (SI_est, SI_var) in enumerate(results):
                     SI_ests[k, j, i, :] = SI_est
                     SI_vars[k, j, i, :] = SI_var
-                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / - SI_true
+                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
