@@ -203,26 +203,26 @@ def main():
                 tasks = []
                 for j in range(num_filters):
                     if j != 0:  # PF
-                        noOp = True
-                        # tasks.append(
-                        #     (
-                        #         "PF",
-                        #         num_particles[j - 1],
-                        #         num_states,
-                        #         dt,
-                        #         dtmeas,
-                        #         t,
-                        #         t_meas,
-                        #         G_meas,
-                        #         initial_state,
-                        #         process_noises,
-                        #         meas_noise_std,
-                        #         uex_const,
-                        #         PN_const,
-                        #         D_const,
-                        #         SI_const,
-                        #     )
-                        # )
+                        # noOp = True
+                        tasks.append(
+                            (
+                                "PF",
+                                num_particles[j - 1],
+                                num_states,
+                                dt,
+                                dtmeas,
+                                t,
+                                t_meas,
+                                G_meas,
+                                initial_state,
+                                process_noises,
+                                meas_noise_std,
+                                uex_const,
+                                PN_const,
+                                D_const,
+                                SI_const,
+                            )
+                        )
 
                     else:  # EKF
                         # noOp = True
@@ -260,12 +260,11 @@ def main():
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
-        nans = np.isfinite(SI_ests)
-        filter_patient_nan = ~nans.all(axis=(3))
-        broadcast = filter_patient_nan[:,:,:,None]
-        SI_ests[broadcast] = np.nan
-        SI_vars[broadcast] = np.nan
-        SI_errs[broadcast] = np.nan
+        not_nans = np.isfinite(SI_ests)
+        mask = ~not_nans.all(axis=-1) 
+        SI_ests[mask, :] = np.nan
+        SI_vars[mask, :] = np.nan
+        SI_errs[mask, :] = np.nan
         np.save("variables/SI_ests_augment_vary_04", SI_ests)
         np.save("variables/SI_vars_augment_vary_04", SI_vars)
         np.save("variables/SI_errs_augment_vary_04", SI_errs)
