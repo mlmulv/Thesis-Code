@@ -83,11 +83,16 @@ class PatientCohort:
             SI_const = input_consts[3]
             if self.SI_piecewise_changes is not None:
                 SI_next_const = SI_const.copy()
+                Uniform = sp.stats.Uniform(a=self.SI_scale[0], b=self.SI_scale[1])
+                Uniform_sign = sp.stats.Uniform(a=0, b=1)
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
+                    sign = 1 if Uniform_sign.sample(shape=(1,)) <= 0.5 else -1
                     SI_next_const = SI_curr_const * (
-                        1 + sp.stats.norm.rvs(0, scale=self.SI_scale)
+                        1 + sign * Uniform.sample(shape=(1,))
                     )
+                    # clip SI
+                    SI_next_const = np.clip(SI_next_const, 2.7e-5, 2.5e-3)
                     SI_const = np.append(SI_const, SI_next_const)
 
                 shift = int(len(self.t) / self.SI_piecewise_changes)

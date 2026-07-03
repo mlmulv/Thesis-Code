@@ -82,20 +82,24 @@ def worker(task):
         EKF_filter = ext_kalman_filter.ExtendedKalmanFilter(
             num_states=num_states, model=model, ts_meas=dtmeas
         )
-        sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
-        saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
-        SI_est = saved_state[:, -1]
-        SI_var = saved_noise_var[:, -1, -1]
+        try:
+            sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
+            saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
+            SI_est = saved_state[:, -1]
+            SI_var = saved_noise_var[:, -1, -1]
+        except Exception as e:
+            SI_est = np.nan
+            SI_var = np.nan
 
     return SI_est, SI_var
 
 
 def main():
     try:
-        SI_ests = np.load("variables/SI_ests_augment_vary_04_temp.npy")
-        SI_vars = np.load("variables/SI_vars_augment_vary_04_temp.npy")
-        SI_errs = np.load("variables/SI_errs_augment_vary_04_temp.npy")
-        SI_true_arr = np.load("variables/SI_true_arr_augment_vary_04_temp.npy")
+        SI_ests = np.load("variables/SI_ests_augment_vary_04.npy")
+        SI_vars = np.load("variables/SI_vars_augment_vary_04.npy")
+        SI_errs = np.load("variables/SI_errs_augment_vary_04.npy")
+        SI_true_arr = np.load("variables/SI_true_arr_augment_vary_04.npy")
         print("Loaded variables from previous run")
     except Exception:
         with open("../config.toml", "rb") as f:
@@ -145,9 +149,11 @@ def main():
         num_deviations = len(deviations)
         t = np.arange(0, sim_hours * 60 + 1, dt)
         t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
-        SI_ests = np.zeros((num_deviations, num_filters, num_patients, len(t)))
-        SI_vars = np.zeros_like(SI_ests)
-        SI_errs = np.zeros_like(SI_ests)
+        SI_ests = np.full(
+            (num_deviations, num_filters, num_patients, len(t)), np.nan, dtype=float
+        )
+        SI_vars = np.full_like(SI_ests, np.nan)
+        SI_errs = np.full_like(SI_ests, np.nan)
         SI_true_arr = np.zeros((num_patients, len(t)))
 
         process_noises = np.asarray(
@@ -197,33 +203,11 @@ def main():
                 tasks = []
                 for j in range(num_filters):
                     if j != 0:  # PF
-                        # noOp = True
-                        tasks.append(
-                            (
-                                "PF",
-                                num_particles[j - 1],
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
-                        )
-
-                    else:  # EKF
                         noOp = True
                         # tasks.append(
                         #     (
-                        #         "EKF",
-                        #         0,
+                        #         "PF",
+                        #         num_particles[j - 1],
                         #         num_states,
                         #         dt,
                         #         dtmeas,
@@ -239,23 +223,53 @@ def main():
                         #         SI_const,
                         #     )
                         # )
+
+                    else:  # EKF
+                        # noOp = True
+                        tasks.append(
+                            (
+                                "EKF",
+                                0,
+                                num_states,
+                                dt,
+                                dtmeas,
+                                t,
+                                t_meas,
+                                G_meas,
+                                initial_state,
+                                process_noises,
+                                meas_noise_std,
+                                uex_const,
+                                PN_const,
+                                D_const,
+                                SI_const,
+                            )
+                        )
                 n_workers = min(len(tasks), cpu_count())
 
                 with Pool(processes=n_workers) as p:
                     results = p.map(worker, tasks)
 
                 for j, (SI_est, SI_var) in enumerate(results):
-                    SI_ests[k, j, i, :] = SI_est
-                    SI_vars[k, j, i, :] = SI_var
-                    SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
-
+                    if np.isfinite(SI_est).all():
+                        SI_ests[k, j, i, :] = SI_est
+                        SI_vars[k, j, i, :] = SI_var
+                        SI_errs[k, j, i, :] = (
+                            100 * (np.abs((SI_est - SI_true))) / SI_true
+                        )
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
-        np.save("variables/SI_ests_augment_vary_04_temp", SI_ests)
-        np.save("variables/SI_vars_augment_vary_04_temp", SI_vars)
-        np.save("variables/SI_errs_augment_vary_04_temp", SI_errs)
-        np.save("variables/SI_true_arr_augment_vary_04_temp", SI_true_arr)
+        nans = np.isfinite(SI_ests)
+        filter_patient_nan = ~nans.all(axis=(3))
+        broadcast = filter_patient_nan[:,:,:,None]
+        SI_ests[broadcast] = np.nan
+        SI_vars[broadcast] = np.nan
+        SI_errs[broadcast] = np.nan
+        np.save("variables/SI_ests_augment_vary_04", SI_ests)
+        np.save("variables/SI_vars_augment_vary_04", SI_vars)
+        np.save("variables/SI_errs_augment_vary_04", SI_errs)
+        np.save("variables/SI_true_arr_augment_vary_04", SI_true_arr)
 
 
 if __name__ == "__main__":
