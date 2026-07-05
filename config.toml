@@ -14,7 +14,7 @@ y0 = [7.357, 133.115, 98.203, 8.657, 43.283]
 init_cov_scale = 1
 init_cov = [1, 3, 3, 1, 2, 1]
 process_noise_factor =  0.0083
-SI_process_noise = 8e-4
+SI_process_noise = 0.33
 SI_ekf_covar = 1e-5
 SI_pf_covar = 1e-8
 
