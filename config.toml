@@ -29,12 +29,15 @@ c = 0.1
 threshold = 0.1
 
 [02]
-num_patients = 250
-max_std = 1.0
+sim_hours = 60
+num_patients = 500
+max_std = 0.4
 num_std = 5
 low_perc = 5
 high_perc = 95
 CI = 90
+SI_scale = [0.75, 0.95]
+change_SI = 3
 
 [03]
 sim_hours = 12

@@ -11,8 +11,8 @@ import utils
 
 def main():
     try:
-        SI_ests = np.load("variables/SI_ests_02.npy")
-        SI_est_error = np.load("variables/SI_est_error_02.npy")
+        SI_ests = np.load("variables/SI_ests_vary_02.npy")
+        SI_est_error = np.load("variables/SI_est_error_vary_02.npy")
         meas_noise_std = np.load("variables/meas_noise_std_02.npy")
         print("Previous run variables already exist")
 
@@ -20,7 +20,6 @@ def main():
         with open("../config.toml", "rb") as f:
             cfg = tomllib.load(f)
         root_module = "global"
-        sim_hours = cfg[root_module]["sim_hours"]
         dt = cfg[root_module]["dt"]
         dtmeas = cfg[root_module]["dtmeas"]
         meas_noise_std = cfg[root_module]["meas_noise_std"]
@@ -31,6 +30,7 @@ def main():
         y0 = cfg[root_module]["y0"]
         curr_module = "02"
         num_patients = cfg[curr_module]["num_patients"]
+        sim_hours = cfg[curr_module]["sim_hours"]
         max_std = cfg[curr_module]["max_std"]
         num_std = cfg[curr_module]["num_std"]
         t = np.arange(0, sim_hours * 60 + 1, dt)
@@ -40,6 +40,8 @@ def main():
         num_noise_std = len(meas_noise_std)
         SI_est_error = np.zeros((num_noise_std, num_patients, len(t_hourly)))
         SI_ests = np.zeros_like(SI_est_error)
+        change_SI = cfg[curr_module]["change_SI"]
+        SI_scale = cfg[curr_module]["SI_scale"]
 
         for i in range(num_noise_std):
             PatientCohort = patient_cohort.PatientCohort(
@@ -53,6 +55,8 @@ def main():
                 PN_bounds=PN_bounds,
                 SI_params=SI_params,
                 y0=y0,
+                SI_piecewise_changes=change_SI,
+                SI_scale=SI_scale,
             )
             patient_data = PatientCohort.patient_data()
             for j in range(num_patients):
@@ -69,11 +73,11 @@ def main():
                     P_true=P,
                 )
                 SI_ests[i, j, :] = SI_est
-                SI_est_error[i, j, :] = np.abs((SI_est - SI_true) * 100 / SI_true)
+                SI_est_error[i, j, :] = (SI_true - SI_est)**2
 
         print("Done")
-        np.save("variables/SI_ests_02", SI_ests)
-        np.save("variables/SI_est_error_02", SI_est_error)
+        np.save("variables/SI_ests_vary_02", SI_ests)
+        np.save("variables/SI_est_error_vary_02", SI_est_error)
         np.save("variables/meas_noise_std_02", meas_noise_std)
 
 
