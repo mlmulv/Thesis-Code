@@ -47,12 +47,8 @@ class PatientCohort:
         self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in self.t_meas]
 
         try:
-            self.insulin_histogram = np.load(
-                "../scripts/saved_variables/insulin_histogram.npz"
-            )
-            self.feeding_histogram = np.load(
-                "../scripts/saved_variables/feeding_histogram.npz"
-            )
+            self.insulin_histogram = np.load("insulin_histogram.npz")
+            self.feeding_histogram = np.load("feeding_histogram.npz")
         except Exception:
             print("GLUC-ICU input histograms not in saved_variables directory")
 
@@ -74,7 +70,7 @@ class PatientCohort:
             heights=insulin_height, edges=insulin_edges, num_samples=1, ndims=1
         )
         D_const, PN_const = utils.sample_hist(
-            heights=feeding_height, edges=feeding_edges, num_samples=1, ndims=2 
+            heights=feeding_height, edges=feeding_edges, num_samples=1, ndims=2
         )
         SI_const = np.exp(
             sp.stats.norm.rvs(loc=self.SI_params[0], scale=self.SI_params[1])
