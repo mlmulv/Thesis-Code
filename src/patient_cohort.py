@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 import scipy as sp
@@ -9,7 +10,7 @@ import icing_true
 import utils
 
 rng = np.random.default_rng()
-
+base_dir = Path(__file__).resolve().parent
 
 class PatientCohort:
     def __init__(
@@ -47,8 +48,8 @@ class PatientCohort:
         self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in self.t_meas]
 
         try:
-            self.insulin_histogram = np.load("insulin_histogram.npz")
-            self.feeding_histogram = np.load("feeding_histogram.npz")
+            self.insulin_histogram = np.load(base_dir / "insulin_histogram.npz")
+            self.feeding_histogram = np.load(base_dir / "feeding_histogram.npz")
         except Exception:
             print("GLUC-ICU input histograms not in saved_variables directory")
 
