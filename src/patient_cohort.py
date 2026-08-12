@@ -46,17 +46,43 @@ class PatientCohort:
         self.t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
         self.sample_indices = [np.argmin(np.abs(self.t - st)) for st in self.t_meas]
 
-    def draw_inputs(self):
-        uex_const = rng.uniform(low=self.uex_bounds[0], high=self.uex_bounds[1])
-        D_const = rng.uniform(low=self.D_bounds[0], high=self.D_bounds[1])
-        PN_const = rng.uniform(low=self.PN_bounds[0], high=self.PN_bounds[1])
+        try:
+            self.insulin_histogram = np.load(
+                "../scripts/saved_variables/insulin_histogram.npz"
+            )
+            self.feeding_histogram = np.load(
+                "../scripts/saved_variables/feeding_histogram.npz"
+            )
+        except Exception:
+            print("GLUC-ICU input histograms not in saved_variables directory")
+
+    # def draw_inputs(self):
+    #     uex_const = rng.uniform(low=self.uex_bounds[0], high=self.uex_bounds[1])
+    #     D_const = rng.uniform(low=self.D_bounds[0], high=self.D_bounds[1])
+    #     PN_const = rng.uniform(low=self.PN_bounds[0], high=self.PN_bounds[1])
+    #     SI_const = np.exp(
+    #         sp.stats.norm.rvs(loc=self.SI_params[0], scale=self.SI_params[1])
+    #     )
+    #     return uex_const, D_const, PN_const, SI_const
+
+    def draw_KI_inputs(self):
+        insulin_height = self.insulin_histogram["insulin_heights"]
+        insulin_edges = self.insulin_histogram["insulin_edges"]
+        feeding_height = self.feeding_histogram["feeding_heights"]
+        feeding_edges = self.feeding_histogram["feeding_edges"]
+        uex_const = utils.sample_hist(
+            heights=insulin_height, edges=insulin_edges, num_samples=1, ndims=1
+        )
+        D_const, PN_const = utils.sample_hist(
+            heights=feeding_height, edges=feeding_edges, num_samples=1, ndims=2 
+        )
         SI_const = np.exp(
             sp.stats.norm.rvs(loc=self.SI_params[0], scale=self.SI_params[1])
         )
         return uex_const, D_const, PN_const, SI_const
 
     def initial_states(self):
-        uex_const, D_const, PN_const, SI_const = self.draw_inputs()
+        uex_const, D_const, PN_const, SI_const = self.draw_KI_inputs()
         uex_func = utils.gen_uex_func(uex_const)
         D_func = utils.gen_D_func(D_const)
         PN_func = utils.gen_PN_func(PN_const)

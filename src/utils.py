@@ -5,6 +5,7 @@ from scipy.stats import gaussian_kde
 
 import icing_true
 
+rng = np.random.default_rng()
 
 def gen_SI_func(SI_const):
     return lambda t: SI_const
@@ -43,6 +44,38 @@ def piecewise_constant_to_callable(values, timestamps):
         return values[idx]
 
     return f
+
+
+def sample_hist(heights, edges, num_samples, ndims):
+    if ndims < 1 or ndims > 2:
+        assert ValueError("ndims must be either 1 or 2")
+
+    if ndims == 1:
+        midpoints = (edges[:-1] + edges[1:]) / 2
+
+        cdf = np.cumsum(heights)
+        cdf = cdf / cdf[-1]
+
+        values = rng.random(num_samples)
+        value_edges = np.searchsorted(cdf, values)
+        samples = midpoints[value_edges][0]
+
+    if ndims == 2:
+        x_edges, y_edges = edges
+        x_midpoints = (x_edges[:-1] + x_edges[1:]) / 2
+        y_midpoints = (y_edges[:-1] + y_edges[1:]) / 2
+
+        cdf = np.cumsum(heights.flatten())
+        cdf /= cdf[-1]
+
+        values = np.random.rand(num_samples)
+        value_edges = np.searchsorted(cdf, values)
+        x_idx, y_idx = np.unravel_index(
+            value_edges, (len(x_midpoints), len(y_midpoints))
+        )
+        samples = [x_midpoints[x_idx][0], y_midpoints[y_idx][0]]
+
+    return samples
 
 
 def integral_approximate_SI(G_t1, G_t0, Q, P, t):
@@ -114,9 +147,7 @@ def integral_approximate_SI_seq(t, t_meas, Ts_meas, G_meas, Q_true, P_true):
         P = P_true[t_mask]
         G_t1 = G_meas[idx + 1]
         G_t0 = G_meas[idx]
-        SI.append(
-            integral_approximate_SI(G_t1, G_t0, Q, P, times)
-        )
+        SI.append(integral_approximate_SI(G_t1, G_t0, Q, P, times))
 
     SI = np.reshape(SI, shape=-1)
     return SI
