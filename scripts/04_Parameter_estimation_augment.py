@@ -120,7 +120,7 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
-        SI_process_noise = cfg[root_module]["SI_process_noise"]
+        # SI_process_noise = cfg[root_module]["SI_process_noise"]
 
         curr_module = "04"
         sim_hours = cfg[curr_module]["sim_hours"]
@@ -160,13 +160,13 @@ def main():
 
         process_noises = np.asarray(
             [
-                (0.005) * process_noise_factor,
-                (1) * process_noise_factor,
-                (1) * process_noise_factor,
-                (0.005) * process_noise_factor,
-                (0.025) * process_noise_factor,
+                (0.008) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
                 (1e-8) * process_noise_factor,
-                (SI_process_noise) * process_noise_factor,
+                (8e-4) * process_noise_factor,
             ]
         )
 

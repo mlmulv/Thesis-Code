@@ -118,7 +118,7 @@ def main():
         sim_hours = cfg[curr_module]["sim_hours_vary"]
         num_patients = cfg[curr_module]["num_patients"]
         process_noise_factor = cfg[curr_module]["process_noise_factor"]
-        SI_process_noise = cfg[root_module]["SI_process_noise"]
+        # SI_process_noise = cfg[root_module]["SI_process_noise"]
         num_particles = np.asarray(cfg[curr_module]["num_particles"])
         deviations = cfg[curr_module]["deviations"]
         change_SI = cfg[curr_module]["change_SI"]
@@ -158,13 +158,13 @@ def main():
 
         process_noises = np.asarray(
             [
-                (0.005) * process_noise_factor,
-                (1) * process_noise_factor,
-                (1) * process_noise_factor,
-                (0.005) * process_noise_factor,
-                (0.025) * process_noise_factor,
+                (0.008) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
                 (1e-8) * process_noise_factor,
-                (SI_process_noise) * process_noise_factor,
+                (0.33) * process_noise_factor,
             ]
         )
 

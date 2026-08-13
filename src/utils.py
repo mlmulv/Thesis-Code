@@ -7,12 +7,20 @@ import icing_true
 
 rng = np.random.default_rng()
 
+
 def gen_SI_func(SI_const):
     return lambda t: SI_const
 
 
 def gen_uex_func(uex_const):
-    return lambda t: uex_const
+    # if exp is False:
+    #     return lambda t: uex_const
+
+    # exponential ramp down
+    T = 4 * 60  # repeat insulin intake every 4h
+    p = 0.5 # end at half of the start
+    k = - np.log(1-p) / T  # rate of min^-1  
+    return lambda t: uex_const * np.exp(-k*(t % T))
 
 
 def gen_D_func(D_const):
@@ -20,8 +28,11 @@ def gen_D_func(D_const):
 
 
 def gen_PN_func(PN_const):
-    return lambda t: PN_const
-
+    # return lambda t: PN_const
+    T = 4 * 60  # repeat insulin intake every 4h
+    p = 0.5 # end at half of the start
+    k = - np.log(1-p) / T  # rate of min^-1  
+    return lambda t: PN_const * np.exp(-k*(t % T))    
 
 def plot_weighted_kde(axis, samples, weights, bw, **plot_kwargs):
     avg = np.average(samples, weights=weights)

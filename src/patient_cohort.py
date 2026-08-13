@@ -25,6 +25,7 @@ class PatientCohort:
         PN_bounds,
         SI_params,
         y0,
+        exp_uex=False,
         SI_piecewise_changes=None,
         SI_scale=None,
     ):
@@ -80,7 +81,7 @@ class PatientCohort:
 
     def initial_states(self):
         uex_const, D_const, PN_const, SI_const = self.draw_KI_inputs()
-        uex_func = utils.gen_uex_func(uex_const)
+        uex_func = utils.gen_uex_func(uex_const, )
         D_func = utils.gen_D_func(D_const)
         PN_func = utils.gen_PN_func(PN_const)
         SI_func = utils.gen_SI_func(SI_const)
