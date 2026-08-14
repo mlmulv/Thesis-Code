@@ -12,6 +12,7 @@ import utils
 rng = np.random.default_rng()
 base_dir = Path(__file__).resolve().parent
 
+
 class PatientCohort:
     def __init__(
         self,
@@ -81,7 +82,9 @@ class PatientCohort:
 
     def initial_states(self):
         uex_const, D_const, PN_const, SI_const = self.draw_KI_inputs()
-        uex_func = utils.gen_uex_func(uex_const, )
+        uex_func = utils.gen_uex_func(
+            uex_const,
+        )
         D_func = utils.gen_D_func(D_const)
         PN_func = utils.gen_PN_func(PN_const)
         SI_func = utils.gen_SI_func(SI_const)
@@ -98,6 +101,7 @@ class PatientCohort:
     def patient_data(self):
         t_start = self.t[0]
         t_end = self.t[-1]
+        t_len = len(self.t)
         data = []
         for i in range(self.num_patients):
             x0, input_consts = self.initial_states()
@@ -119,16 +123,24 @@ class PatientCohort:
                     SI_next_const = np.clip(SI_next_const, 2.7e-5, 2.5e-3)
                     SI_const = np.append(SI_const, SI_next_const)
 
-                shift = int(len(self.t) / self.SI_piecewise_changes)
+                shift = int(t_len / self.SI_piecewise_changes)
                 SI_values = np.ones_like(self.t)
 
+                # linearly interpolate between constants
                 for i in range(self.SI_piecewise_changes):
-                    next_idx = i + 1
                     if i != self.SI_piecewise_changes - 1:
-                        SI_values[i * shift : (next_idx * shift)] = SI_const[i]
+                        t = np.arange(i * shift, (i + 1) * shift)
+                        k = np.arange(shift)
+                        SI_values[t] = (
+                            (SI_const[i + 1] - SI_const[i]) / shift
+                        ) * k + SI_const[i]
                     else:
-                        SI_values[i * shift : (next_idx * shift) + 1] = SI_const[i]
-
+                        t = np.arange(i * shift, (i + 1) * shift + 1)
+                        k = np.arange(shift + 1)
+                        SI_values[t] = (
+                            (SI_const[i + 1] - SI_const[i]) / shift
+                        ) * k + SI_const[i]
+                        
                 SI_func = utils.piecewise_constant_to_callable(SI_values, self.t)
             else:
                 SI_func = utils.gen_SI_func(SI_const=SI_const)
