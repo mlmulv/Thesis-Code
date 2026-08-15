@@ -254,11 +254,11 @@ def main():
                 with Pool(processes=n_workers) as p:
                     results = p.map(worker, tasks)
 
-                for j, (SI_est, all_state, all_var) in enumerate(results):
+                for j, (SI_est) in enumerate(results):
                     SI_ests[k, j, i, :] = SI_est
                     SI_errs[k, j, i, :] = 100 * (np.abs((SI_est - SI_true))) / SI_true
-                    states[k, j, i, :, :] = all_state
-                    all_vars[k, j, i, :] = all_var
+#                    states[k, j, i, :, :] = all_state
+#                    all_vars[k, j, i, :] = all_var
 
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
