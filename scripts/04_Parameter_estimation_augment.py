@@ -61,9 +61,9 @@ def worker(task):
         _, _, saved_particles, saved_weights, _, _, _, _, _, _, _, _ = sim.run()
 
         SI_est = np.average(saved_particles[:, :, -1], weights=saved_weights, axis=1)
-        all_vars = np.average((saved_particles[:,:,-1] - SI_est[:, np.newaxis])**2, weights=saved_weights, axis=1)
-        weights = np.repeat(saved_weights[:, :, np.newaxis], 7, axis=2)
-        states = np.average(saved_particles, weights=weights, axis=1)
+        # all_vars = np.average((saved_particles[:,:,-1] - SI_est[:, np.newaxis])**2, weights=saved_weights, axis=1)
+        # weights = np.repeat(saved_weights[:, :, np.newaxis], 7, axis=2)
+        # states = np.average(saved_particles, weights=weights, axis=1)
         # difference = saved_particles - states[:, np.newaxis, :]
         # outer = difference[:, :, np.newaxis, :] * difference[:, :, :, np.newaxis]
         # weights = np.repeat(weights[:, :, :, np.newaxis], 7, axis=3)
@@ -90,13 +90,16 @@ def worker(task):
         EKF_filter = ext_kalman_filter.ExtendedKalmanFilter(
             num_states=num_states, model=model, ts_meas=dtmeas
         )
-        sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
-        saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
-        SI_est = saved_state[:, -1]
-        states = saved_state
-        all_vars = saved_noise_var[:,-1,-1]
+        try:
+            sim = EKF_filter.simulate(t, t_meas, G_meas, EKF_filter)
+            saved_state, saved_noise_var, _, _, _, _, _, _, _, _ = sim.run()
+            SI_est = saved_state[:, -1]
+            # states = saved_state
+            # all_vars = saved_noise_var[:,-1,-1]
+        except Exception as e:
+            SI_est = np.nan
 
-    return SI_est, states, all_vars
+    return SI_est
 
 
 def main():
@@ -104,8 +107,8 @@ def main():
         SI_ests = np.load("variables/SI_ests_augment_static_04.npy")
         SI_errs = np.load("variables/SI_errs_augment_static_04.npy")
         SI_true_arr = np.load("variables/SI_true_arr_augment_static_04.npy")
-        states = np.load("variables/states_augment_static_04.npy")
-        all_vars = np.load("variables/vars_augment_static_04.npy")
+        # states = np.load("variables/states_augment_static_04.npy")
+        # all_vars = np.load("variables/vars_augment_static_04.npy")
 
         print("Loaded variables from previous run")
     except Exception:
@@ -260,9 +263,13 @@ def main():
             print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
+        not_nans = np.isfinite(SI_ests)
+        mask = ~not_nans.all(axis=-1) 
+        SI_ests[mask, :] = np.nan
+        SI_errs[mask, :] = np.nan
         np.save("variables/SI_ests_augment_static_04", SI_ests)
-        np.save("variables/vars_augment_static_04", all_vars)
-        np.save("variables/states_augment_static_04", states)
+        # np.save("variables/vars_augment_static_04", all_vars)
+        # np.save("variables/states_augment_static_04", states)
         np.save("variables/SI_errs_augment_static_04", SI_errs)
         np.save("variables/SI_true_arr_augment_static_04", SI_true_arr)
 
