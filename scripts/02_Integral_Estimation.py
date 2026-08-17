@@ -12,8 +12,8 @@ import utils
 def main():
     try:
         SI_ests = np.load("variables/SI_ests_02.npy")
-        SI_est_error = np.load("variables/SI_est_error_02.npy")
-        meas_noise_std = np.load("variables/meas_noise_std_02.npy")
+        SI_est_error = np.load("variables/SI_est_error_vary_02.npy")
+        meas_noise_std = np.load("variables/meas_noise_std_vary_02.npy")
         print("Previous run variables already exist")
 
     except Exception:
@@ -54,9 +54,9 @@ def main():
                 D_bounds=D_bounds,
                 PN_bounds=PN_bounds,
                 SI_params=SI_params,
-                y0=y0
-                # SI_piecewise_changes=change_SI,
-                # SI_scale=SI_scale,
+                y0=y0,
+                SI_piecewise_changes=change_SI,
+                SI_scale=SI_scale,
             )
             patient_data = PatientCohort.patient_data()
             for j in range(num_patients):
@@ -77,8 +77,8 @@ def main():
 
         print("Done")
         np.save("variables/SI_ests_02", SI_ests)
-        np.save("variables/SI_est_error_02", SI_est_error)
-        np.save("variables/meas_noise_std_02", meas_noise_std)
+        np.save("variables/SI_est_error_vary_02", SI_est_error)
+        np.save("variables/meas_noise_std_vary_02", meas_noise_std)
 
 
 if __name__ == "__main__":

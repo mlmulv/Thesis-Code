@@ -32,6 +32,7 @@ def main():
         curr_module = "00"
         num_patients = cfg[curr_module]["num_patients"]
         num_simulations = cfg[curr_module]["num_simulations"]
+        bins = cfg[curr_module]["bins"]
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients,
@@ -56,8 +57,21 @@ def main():
             x0[-2, i] = min(ICINGTrue.params["d2"] * x0[-3, i], ICINGTrue.params["Pmax"]) + inputs[2, i] # P
             x0[-1, i] = ICINGTrue.params["k1"] * np.exp(-(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * x0[1,i]) # uen 
 
+        states_mask = np.ones((x0.shape[0],), dtype=np.bool)
+        states_mask[5] = False
+        states = x0[states_mask, :]
+        num_states = states.shape[0]
+        bins=100
+        heights = np.zeros((num_states, bins))
+        edges = np.zeros((num_states, bins + 1))
+
+        for i in range(num_states):
+            heights[i, :], edges[i, :] = np.histogram(states[i, :], bins=bins)
+
         np.save("variables/x0_00", x0)
         np.save("variables/inputs_00", inputs)
+        np.save("variables/heights_00", heights)
+        np.save("variables/edges_00", edges)
 
 
 if __name__ == "__main__":
