@@ -23,12 +23,12 @@ class ExtendedKalmanFilter:
 
     def initialize_filter(self):
         if self.SI_augment:
-            state = [9.11, 16.3, 29.4, 3.67, 18.39, 43.7, 4.1e-4]
+            state = [[9.11, 16.3, 29.4, 3.67, 18.39, 43.7, 4.1e-4]]
             noise_vars = self.init_cov_scale * np.diag(
                 np.append(self.init_cov, self.SI_ekf_covar)
             )
         else:
-            state = [9.11, 16.3, 29.4, 3.67, 18.39, 43.7]
+            state = np.asarray([[9.11, 16.3, 29.4, 3.67, 18.39, 43.7]]).reshape(6,1)
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
         self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()

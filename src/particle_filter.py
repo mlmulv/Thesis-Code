@@ -52,7 +52,7 @@ class BootstrapParticleFilter:
             print("Run 00_Parameter_Distributions.py")
         random_state = np.ones((self.num_states,))
         for i in range(self.num_states):
-            random_state[i] = utils.sample_hist(heights[i,:], edges[i,:], samples=1, ndims=1)
+            random_state[i] = utils.sample_hist(heights[i,:], edges[i,:], num_samples=1, ndims=1)
         # if self.model.SI_augment:
             # noise_vars = self.init_cov_scale * np.diag(
             #     np.append(self.init_cov, self.SI_pf_covar)

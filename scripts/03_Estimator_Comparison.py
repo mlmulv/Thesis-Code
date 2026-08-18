@@ -120,7 +120,7 @@ def main():
 
         process_noises = np.asarray(
             [
-                (0.008) * process_noise_factor,
+                (0.008) * process_noise_factor, 
                 (0.027) * process_noise_factor,
                 (0.086) * process_noise_factor,
                 (0.001) * process_noise_factor,
@@ -157,7 +157,7 @@ def main():
         G_ests = np.zeros_like(error_est)
         G_trues = np.zeros((num_patients, len(t)))
         states = np.zeros((num_filters, num_patients, len(t), 6))
-        all_vars = np.zeros(num_filters, num_patients, len(t), 6, 6)
+        all_vars = np.zeros((num_filters, num_patients, len(t), 6, 6))
 
         time_start = time.time()
         for i in range(num_patients):
