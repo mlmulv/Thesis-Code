@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,8 @@ from matplotlib.ticker import FuncFormatter
 import utils
 
 rng = np.random.default_rng()
+
+base_dir = Path(__file__).resolve().parent
 
 
 class BootstrapParticleFilter:
@@ -43,8 +46,8 @@ class BootstrapParticleFilter:
 
     def draw_initial_state(self):
         try:
-            edges = np.load("../scripts/saved_variables/module0/edges_00.npy")
-            heights = np.load("../scripts/saved_variables/module0/heights_00.npy")
+            edges = np.load(base_dir / 'edges_00.npy')
+            heights = np.load(base_dir / 'heights_00.npy')
         except Exception:
             print("Run 00_Parameter_Distributions.py")
         random_state = np.ones((self.num_states,))
