@@ -22,17 +22,27 @@ class ExtendedKalmanFilter:
         self.init_cov_scale = cfg[root_module]["init_cov_scale"]
 
     def initialize_filter(self):
-        state = self.model.initial_state.copy()
         if self.SI_augment:
+            state = [9.11, 16.3, 29.4, 3.67, 18.39, 43.7, 4.1e-4]
             noise_vars = self.init_cov_scale * np.diag(
                 np.append(self.init_cov, self.SI_ekf_covar)
             )
-            self.Q = np.diag(self.model.process_noise_var)
         else:
+            state = [9.11, 16.3, 29.4, 3.67, 18.39, 43.7]
             noise_vars = self.init_cov_scale * np.diag(self.init_cov)
-            self.Q = np.diag(self.model.process_noise_var)
+        self.Q = np.diag(self.model.process_noise_var)
         self.h_model_func = self.calc_h_model_func()
         self.R = np.array([[self.model.measurement_noise_var]])
+
+        # state = self.model.initial_state.copy()
+        # if self.SI_augment:
+        #     noise_vars = self.init_cov_scale * np.diag(
+        #         np.append(self.init_cov, self.SI_ekf_covar)
+        #     )
+        #     self.Q = np.diag(self.model.process_noise_var)
+        # else:
+        #     noise_vars = self.init_cov_scale * np.diag(self.init_cov)
+        #     self.Q = np.diag(self.model.process_noise_var)
         return state, noise_vars
 
     def calc_f_model_func(self, m, curr_SI):

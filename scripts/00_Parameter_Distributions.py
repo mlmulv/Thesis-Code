@@ -28,6 +28,17 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
+        process_noise_factor = cfg[root_module]["process_noise_factor"]
+        process_noises = np.asarray(
+            [
+                (0.008) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
+                (1e-8) * process_noise_factor,
+            ]
+        )
 
         curr_module = "00"
         num_patients = cfg[curr_module]["num_patients"]
@@ -39,12 +50,13 @@ def main():
             sim_hours,
             dt,
             dtmeas,
+            process_noises,
             meas_noise_std,
             uex_bounds,
             D_bounds,
             PN_bounds,
             SI_params,
-            y0,
+            y0
         )
 
         ICINGTrue = icing_true.ICINGTrue()
@@ -60,13 +72,16 @@ def main():
         states_mask = np.ones((x0.shape[0],), dtype=np.bool)
         states_mask[5] = False
         states = x0[states_mask, :]
-        num_states = states.shape[0]
+        num_states = states.shape[0] + 1
         bins=100
         heights = np.zeros((num_states, bins))
         edges = np.zeros((num_states, bins + 1))
 
         for i in range(num_states):
-            heights[i, :], edges[i, :] = np.histogram(states[i, :], bins=bins)
+            if i != num_states -1:
+                heights[i, :], edges[i, :] = np.histogram(states[i, :], bins=bins)
+            else:
+                heights[i, :], edges[i, :] = np.histogram(inputs[-1, :], bins=bins) 
 
         np.save("variables/x0_00", x0)
         np.save("variables/inputs_00", inputs)

@@ -21,7 +21,7 @@ SI_pf_covar = 1e-8
 [00]
 SI_scale = [0.75, 0.95]
 num_patients = 5
-num_simulations = 100000
+num_simulations = 10000
 bins = 100
 
 [01]

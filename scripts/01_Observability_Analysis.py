@@ -32,6 +32,18 @@ def main():
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
         x_max = cfg[root_module]["x_max"]
+        process_noise_factor = cfg[root_module]["process_noise_factor"]
+        process_noises = np.asarray(
+            [
+                (0.008) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
+                (1e-8) * process_noise_factor,
+            ]
+        )
+
 
         curr_module = "01"
         n_pert = cfg[curr_module]["n_pert"]
@@ -51,6 +63,7 @@ def main():
             SI_params=SI_params,
             y0=y0,
             SI_piecewise_changes=None,
+            process_noise_vars = process_noises
         )
 
         patient_data = PatientCohort.patient_data()

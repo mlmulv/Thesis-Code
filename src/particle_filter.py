@@ -42,22 +42,31 @@ class BootstrapParticleFilter:
         )  # Resample when effective sample size is less than half the number of particles
 
     def draw_initial_state(self):
-        if self.model.SI_augment:
-            noise_vars = self.init_cov_scale * np.diag(
-                np.append(self.init_cov, self.SI_pf_covar)
-            )
+        try:
+            edges = np.load("../scripts/saved_variables/module0/edges_00.npy")
+            heights = np.load("../scripts/saved_variables/module0/heights_00.npy")
+        except Exception:
+            print("Run 00_Parameter_Distributions.py")
+        random_state = np.ones((self.num_states,))
+        for i in range(self.num_states):
+            random_state[i] = utils.sample_hist(heights[i,:], edges[i,:], samples=1, ndims=1)
+        # if self.model.SI_augment:
+            # noise_vars = self.init_cov_scale * np.diag(
+            #     np.append(self.init_cov, self.SI_pf_covar)
+            # )
             # initial_state_logSI = self.model.initial_state.copy()
             # initial_state_logSI[-1, 0] = np.log(initial_state_logSI[-1, 0])
-            random_state = rng.multivariate_normal(
-                mean=self.model.initial_state[:, 0], cov=noise_vars
-            )
+            # random_state = rng.multivariate_normal(
+            #     mean=self.model.initial_state[:, 0], cov=noise_vars
+            # )
             # random_state[-1] = np.exp(random_state[-1])
+            # return random_state
+        # else:
+            # noise_vars = self.init_cov_scale * np.diag(self.init_cov)
+            # return rng.multivariate_normal(
+            #     mean=self.model.initial_state[:, 0], cov=noise_vars
+            # )
             return random_state
-        else:
-            noise_vars = self.init_cov_scale * np.diag(self.init_cov)
-            return rng.multivariate_normal(
-                mean=self.model.initial_state[:, 0], cov=noise_vars
-            )
 
     def initialise_particles(self):
         for i in range(self.num_particles):

@@ -20,6 +20,7 @@ class PatientCohort:
         sim_hours,
         dt,
         dtmeas,
+        process_noise_vars,
         meas_noise_std,
         uex_bounds,
         D_bounds,
@@ -35,6 +36,7 @@ class PatientCohort:
         self.sim_hours = sim_hours
         self.dt = dt  # simulation resolution in hours
         self.dtmeas = dtmeas  # measurement resolution in hours
+        self.process_noise_vars = process_noise_vars
         self.meas_noise_std = meas_noise_std
         self.uex_bounds = uex_bounds  # [low, mean, std]
         self.D_bounds = D_bounds  # [low, high]
@@ -140,7 +142,7 @@ class PatientCohort:
                         SI_values[t] = (
                             (SI_const[i + 1] - SI_const[i]) / shift
                         ) * k + SI_const[i]
-                        
+
                 SI_func = utils.piecewise_constant_to_callable(SI_values, self.t)
             else:
                 SI_func = utils.gen_SI_func(SI_const=SI_const)
@@ -161,14 +163,20 @@ class PatientCohort:
             patient_info = {
                 "patient_id": f"Patient_{i}",
                 "x0": x0,
-                "BG": BG,
+                "BG": BG
+                + np.sqrt(self.process_noise_vars[0]) * np.random.randn(len(self.t)),
                 "BG_meas": BG_meas,
-                "Q": Q,
-                "I": I,
-                "P1": P1,
-                "P2": P2,
+                "Q": Q
+                + np.sqrt(self.process_noise_vars[1]) * np.random.randn(len(self.t)),
+                "I": I
+                + np.sqrt(self.process_noise_vars[2]) * np.random.randn(len(self.t)),
+                "P1": P1
+                + np.sqrt(self.process_noise_vars[3]) * np.random.randn(len(self.t)),
+                "P2": P2
+                + np.sqrt(self.process_noise_vars[4]) * np.random.randn(len(self.t)),
                 "P": P,
-                "uen": uen,
+                "uen": uen
+                + np.sqrt(self.process_noise_vars[5]) * np.random.randn(len(self.t)),
                 "sim_hours": self.sim_hours,
                 "t": self.t,
                 "t_meas": self.t_meas,

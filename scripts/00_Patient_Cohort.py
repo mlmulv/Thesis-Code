@@ -5,8 +5,9 @@ import sys
 import tomllib
 
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
-import patient_cohort
+import numpy as np
 
+import patient_cohort
 
 def main():
     try:
@@ -27,6 +28,17 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
+        process_noise_factor = cfg[root_module]["process_noise_factor"]
+        process_noises = np.asarray(
+            [
+                (0.008) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
+                (1e-8) * process_noise_factor,
+            ]
+        )
 
         curr_module = "00"
         num_patients = cfg[curr_module]["num_patients"]
@@ -41,6 +53,7 @@ def main():
             D_bounds=D_bounds,
             PN_bounds=PN_bounds,
             SI_params=SI_params,
+            process_noise_vars=process_noises,
             y0=y0,
         )
 

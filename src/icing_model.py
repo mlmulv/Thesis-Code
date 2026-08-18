@@ -125,13 +125,13 @@ class ICINGModel:
             cov=np.diag(self.process_noise_var),
         )
         w = np.expand_dims(w, axis=1)
-        x_next_noise = np.zeros_like(x_next)
+        # x_next_noise = np.zeros_like(x_next)
         if self.SI_augment:
-            x_next_noise[:-1,0] = x_next[:-1,0] + w[:-1,0]
-            x_next_noise[-1, 0] = x_next[-1,0] * (1 + w[-1,0])
-        else:
-            x_next_noise = x_next + w
-        return x_next_noise
+            # x_next_noise[:-1,0] = x_next[:-1,0] + w[:-1,0]
+            x_next[-1, 0] = x_next[-1,0] * (1 + w[-1,0])
+        # else:
+        #     x_next_noise = x_next + w
+        return x_next
 
     def observation(self, x, t):
         return x[0] + rng.normal(0.0, np.sqrt(self.measurement_noise_var))

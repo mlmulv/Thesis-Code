@@ -12,8 +12,8 @@ import utils
 def main():
     try:
         SI_ests = np.load("variables/SI_ests_02.npy")
-        SI_est_error = np.load("variables/SI_est_error_vary_02.npy")
-        meas_noise_std = np.load("variables/meas_noise_std_vary_02.npy")
+        SI_est_error = np.load("variables/SI_est_error_02.npy")
+        meas_noise_std = np.load("variables/meas_noise_std_02.npy")
         print("Previous run variables already exist")
 
     except Exception:
@@ -28,6 +28,17 @@ def main():
         PN_bounds = cfg[root_module]["PN_bounds"]
         SI_params = cfg[root_module]["SI_params"]
         y0 = cfg[root_module]["y0"]
+        process_noise_factor = cfg[root_module]["process_noise_factor"]
+        process_noises = np.asarray(
+            [
+                (0.008) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
+                (1e-8) * process_noise_factor,
+            ]
+        )
         curr_module = "02"
         num_patients = cfg[curr_module]["num_patients"]
         sim_hours = cfg[curr_module]["sim_hours"]
@@ -55,6 +66,7 @@ def main():
                 PN_bounds=PN_bounds,
                 SI_params=SI_params,
                 y0=y0,
+                process_noise_vars = process_noises,
                 SI_piecewise_changes=change_SI,
                 SI_scale=SI_scale,
             )
@@ -77,8 +89,8 @@ def main():
 
         print("Done")
         np.save("variables/SI_ests_02", SI_ests)
-        np.save("variables/SI_est_error_vary_02", SI_est_error)
-        np.save("variables/meas_noise_std_vary_02", meas_noise_std)
+        np.save("variables/SI_est_error_02", SI_est_error)
+        np.save("variables/meas_noise_std_02", meas_noise_std)
 
 
 if __name__ == "__main__":

@@ -117,9 +117,17 @@ def main():
         sim_hours = cfg[curr_module]["sim_hours"]
         process_noise_factor = cfg[curr_module]["process_noise_factor"]
         num_particles = np.asarray(cfg[curr_module]["num_particles"])
-        deviations = cfg[curr_module]["deviations"]
 
-        num_deviations = len(deviations)
+        process_noises = np.asarray(
+            [
+                (0.008) * process_noise_factor,
+                (0.027) * process_noise_factor,
+                (0.086) * process_noise_factor,
+                (0.001) * process_noise_factor,
+                (0.034) * process_noise_factor,
+                (1e-8) * process_noise_factor,
+            ]
+        )
 
         PatientCohort = patient_cohort.PatientCohort(
             num_patients=num_patients,
@@ -132,124 +140,109 @@ def main():
             PN_bounds=PN_bounds,
             SI_params=SI_params,
             y0=y0,
+            process_noise_vars = process_noises
         )
 
         patient_data = PatientCohort.patient_data()
 
         ICINGTrue = icing_true.ICINGTrue()
 
-        process_noises = np.asarray(
-                [
-                    (0.008) * process_noise_factor,
-                    (0.027) * process_noise_factor,
-                    (0.086) * process_noise_factor,
-                    (0.001) * process_noise_factor,
-                    (0.034) * process_noise_factor,
-                    (1e-8) * process_noise_factor,
-                ]
-            )
-
-        
-
         num_filters = (
             len(num_particles) + 1
         )  # 1 EKF filter and the number of variations of PF with the assigned number of particles
         t = np.arange(0, sim_hours * 60 + 1, dt)
         t_meas = np.arange(0, sim_hours * 60 + 1, dtmeas)
-        time_train = np.zeros(shape=(num_deviations, num_filters, num_patients))
-        error_est = np.zeros(shape=(num_deviations, num_filters, num_patients, len(t)))
+        time_train = np.zeros(shape=(num_filters, num_patients))
+        error_est = np.zeros(shape=(num_filters, num_patients, len(t)))
         G_ests = np.zeros_like(error_est)
         G_trues = np.zeros((num_patients, len(t)))
-        states = np.zeros((num_deviations, num_filters, num_patients, len(t), 6))
-        all_vars = np.zeros((num_deviations, num_filters, num_patients, len(t), 6, 6))
+        states = np.zeros((num_filters, num_patients, len(t), 6))
+        all_vars = np.zeros(num_filters, num_patients, len(t), 6, 6)
 
         time_start = time.time()
-        for n in range(num_deviations):
-            print(f"Stage {n + 1} / {num_deviations}")
-            deviation = deviations[n]
-            for i in range(num_patients):
-                print(f"Patient {i + 1} / {num_patients}")
-                G_true = patient_data[i]["BG"]
-                G_trues[i,:] = G_true
-                G_meas = patient_data[i]["BG_meas"]
-                uex_const = patient_data[i]["uex"][0]
-                SI_const = patient_data[i]["SI"][0]
-                D_const = patient_data[i]["D"][0]
-                PN_const = patient_data[i]["PN"][0]
-                G_0 = patient_data[i]["BG"][0]
-                Q_0 = patient_data[i]["Q"][0]
-                I_0 = patient_data[i]["I"][0]
-                P1_0 = patient_data[i]["P1"][0]
-                P2_0 = patient_data[i]["P2"][0]
-                y0 = [G_0, I_0, Q_0, P1_0, P2_0]
-                initial_state = deviation * np.append(
-                    y0,
-                    [
-                        ICINGTrue.params["k1"]
-                        * np.exp(
-                            -y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]
+        for i in range(num_patients):
+            print(f"Patient {i + 1} / {num_patients}")
+            G_true = patient_data[i]["BG"]
+            G_trues[i,:] = G_true
+            G_meas = patient_data[i]["BG_meas"]
+            uex_const = patient_data[i]["uex"][0]
+            SI_const = patient_data[i]["SI"][0]
+            D_const = patient_data[i]["D"][0]
+            PN_const = patient_data[i]["PN"][0]
+            G_0 = patient_data[i]["BG"][0]
+            Q_0 = patient_data[i]["Q"][0]
+            I_0 = patient_data[i]["I"][0]
+            P1_0 = patient_data[i]["P1"][0]
+            P2_0 = patient_data[i]["P2"][0]
+            y0 = [G_0, I_0, Q_0, P1_0, P2_0]
+            initial_state = np.append(
+                y0,
+                [
+                    ICINGTrue.params["k1"]
+                    * np.exp(
+                        -y0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]
+                    )
+                ],
+            )
+            initial_state = np.expand_dims(initial_state, axis=1)
+            num_states = len(initial_state)
+
+            tasks = []
+            for j in range(num_filters):
+                if j != 0:  # PF
+                    tasks.append(
+                        (
+                            "PF",
+                            num_particles[j - 1],
+                            num_states,
+                            dt,
+                            dtmeas,
+                            t,
+                            t_meas,
+                            G_meas,
+                            initial_state,
+                            process_noises,
+                            meas_noise_std,
+                            uex_const,
+                            PN_const,
+                            D_const,
+                            SI_const,
                         )
-                    ],
-                )
-                initial_state = np.expand_dims(initial_state, axis=1)
-                num_states = len(initial_state)
-
-                tasks = []
-                for j in range(num_filters):
-                    if j != 0:  # PF
-                        tasks.append(
-                            (
-                                "PF",
-                                num_particles[j - 1],
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
+                    )
+                else:  # EKF
+                    tasks.append(
+                        (
+                            "EKF",
+                            0,
+                            num_states,
+                            dt,
+                            dtmeas,
+                            t,
+                            t_meas,
+                            G_meas,
+                            initial_state,
+                            process_noises,
+                            meas_noise_std,
+                            uex_const,
+                            PN_const,
+                            D_const,
+                            SI_const,
                         )
-                    else:  # EKF
-                        tasks.append(
-                            (
-                                "EKF",
-                                0,
-                                num_states,
-                                dt,
-                                dtmeas,
-                                t,
-                                t_meas,
-                                G_meas,
-                                initial_state,
-                                process_noises,
-                                meas_noise_std,
-                                uex_const,
-                                PN_const,
-                                D_const,
-                                SI_const,
-                            )
-                        )
+                    )
 
-                n_workers = min(len(tasks), cpu_count())
+            n_workers = min(len(tasks), cpu_count())
 
-                with Pool(processes=n_workers) as p:
-                    results = p.map(worker, tasks)
+            with Pool(processes=n_workers) as p:
+                results = p.map(worker, tasks)
 
-                for k, (elapsed, G_est, all_state, all_var) in enumerate(results):
-                    time_train[n, k, i] = elapsed
-                    G_ests[n, k, i, :] = G_est
-                    error_est[n, k, i, :] = (G_true - G_est) ** 2
-                    states[n, k, i, :, :] = all_state
-                    all_vars[n, k, i, :, :, :] = all_var
+            for k, (elapsed, G_est, all_state, all_var) in enumerate(results):
+                time_train[k, i] = elapsed
+                G_ests[k, i, :] = G_est
+                error_est[k, i, :] = (G_true - G_est) ** 2
+                states[k, i, :, :] = all_state
+                all_vars[k, i, :, :, :] = all_var
 
-                print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
+            print(f"{(time.time() - time_start) / 60:.3f} mins have elapsed")
 
         print("Done")
         np.save("variables/time_arr_03_temp", time_train)
