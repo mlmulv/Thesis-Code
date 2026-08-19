@@ -140,3 +140,22 @@ class ICINGModel:
         return sp.stats.norm.logpdf(
             y, loc=x[0], scale=np.sqrt(self.measurement_noise_var)
         )
+
+    def simulate(self, t_eval, SI_func):
+        x = np.zeros((len(self.initial_state), len(t_eval)), dtype=np.float64)
+        x[:,0] = self.initial_state
+        x_next = self.initial_state
+        for ti in range(1, len(t_eval)):
+            u = self.get_inputs(ti)
+            curr_SI = SI_func(ti)
+            x_next = self.state_update(x_next, u, ti, curr_SI=curr_SI)
+            x_next[0,0] += np.random.randn() * np.sqrt(self.process_noise_var[0])
+            x_next[1,0] += np.random.randn() * np.sqrt(self.process_noise_var[1])
+            x_next[2,0] += np.random.randn() * np.sqrt(self.process_noise_var[2])
+            x_next[3,0] += np.random.randn() * np.sqrt(self.process_noise_var[3])
+            x_next[4,0] += np.random.randn() * np.sqrt(self.process_noise_var[4])
+            x_next[5,0] += np.random.randn() * np.sqrt(self.process_noise_var[5])
+            x[:,ti] = x_next[:,0]
+
+        return x
+

@@ -5,7 +5,8 @@ from scipy import integrate
 
 # class ICING model
 class ICINGTrue:
-    def __init__(self, params=None):
+    def __init__(self, process_noise_vars=None, params=None):
+        self.process_noise_vars = process_noise_vars
         if params:
             self.params = params
         else:  # set default params

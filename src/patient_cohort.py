@@ -7,6 +7,7 @@ import scipy as sp
 
 sys.path.append(os.path.abspath(os.path.join("..", "src")))
 import icing_true
+import icing_model
 import utils
 
 rng = np.random.default_rng()
@@ -151,32 +152,38 @@ class PatientCohort:
             D_func = utils.gen_D_func(D_const=D_const)
             PN_func = utils.gen_PN_func(PN_const=PN_const)
             ICINGTrue = icing_true.ICINGTrue()
-            BG, I, Q, P1, P2, P = ICINGTrue.simulate(  # noqa: E741
-                x0, t_start, t_end, self.t, uex_func, PN_func, D_func, SI_func
+            u_en = ICINGTrue.params["k1"] * np.exp(
+                -x0[2] * ICINGTrue.params["k2"] / ICINGTrue.params["k3"]
             )
+            x0 = np.append(x0, u_en)
+            u_funcs = {"D": D_func, "PN": PN_func, "Uex": uex_func}
+            ICINGModel = icing_model.ICINGModel(
+                params=None,
+                dt=self.dt,
+                initial_state=x0,
+                u_funcs=u_funcs,
+                process_noise_vars=self.process_noise_vars,
+                measurement_noise_var=self.meas_noise_std,
+                SI_augment=False,
+            )
+            BG, Q, I, P1, P2, uen = ICINGModel.simulate(self.t, SI_func)
             BG_meas = BG[self.sample_indices] + rng.normal(
                 0.0, self.meas_noise_std, size=len(self.sample_indices)
             )
-            uen = ICINGTrue.params["k1"] * np.exp(
-                -(ICINGTrue.params["k2"] / ICINGTrue.params["k3"]) * I
-            )
+            P = np.minimum(
+                ICINGTrue.params["d2"] * P2, ICINGTrue.params["Pmax"]
+            ) + np.asarray([PN_func(t) for t in self.t])
             patient_info = {
                 "patient_id": f"Patient_{i}",
                 "x0": x0,
-                "BG": BG
-                + np.sqrt(self.process_noise_vars[0]) * np.random.randn(len(self.t)),
+                "BG": BG,
                 "BG_meas": BG_meas,
-                "Q": Q
-                + np.sqrt(self.process_noise_vars[1]) * np.random.randn(len(self.t)),
-                "I": I
-                + np.sqrt(self.process_noise_vars[2]) * np.random.randn(len(self.t)),
-                "P1": P1
-                + np.sqrt(self.process_noise_vars[3]) * np.random.randn(len(self.t)),
-                "P2": P2
-                + np.sqrt(self.process_noise_vars[4]) * np.random.randn(len(self.t)),
+                "Q": Q,
+                "I": I,
+                "P1": P1,
+                "P2": P2,
                 "P": P,
-                "uen": uen
-                + np.sqrt(self.process_noise_vars[5]) * np.random.randn(len(self.t)),
+                "uen": uen,
                 "sim_hours": self.sim_hours,
                 "t": self.t,
                 "t_meas": self.t_meas,

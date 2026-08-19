@@ -69,7 +69,7 @@ class BootstrapParticleFilter:
             # return rng.multivariate_normal(
             #     mean=self.model.initial_state[:, 0], cov=noise_vars
             # )
-            return random_state
+        return random_state
 
     def initialise_particles(self):
         for i in range(self.num_particles):
