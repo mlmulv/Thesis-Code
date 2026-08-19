@@ -31,6 +31,7 @@ class PatientCohort:
         exp_uex=False,
         SI_piecewise_changes=None,
         SI_scale=None,
+        SI_augment=False,
     ):
         # Inputs
         self.num_patients = num_patients
@@ -46,6 +47,7 @@ class PatientCohort:
         self.y0 = y0
         self.SI_piecewise_changes = SI_piecewise_changes  # number of changes
         self.SI_scale = SI_scale
+        self.SI_augment = SI_augment
 
         # Assigned variables
         self.t = np.arange(0, sim_hours * 60 + 1, dt)
@@ -157,16 +159,32 @@ class PatientCohort:
             )
             x0 = np.append(x0, u_en)
             u_funcs = {"D": D_func, "PN": PN_func, "Uex": uex_func}
-            ICINGModel = icing_model.ICINGModel(
-                params=None,
-                dt=self.dt,
-                initial_state=x0,
-                u_funcs=u_funcs,
-                process_noise_vars=self.process_noise_vars,
-                measurement_noise_var=self.meas_noise_std,
-                SI_augment=False,
-            )
-            BG, Q, I, P1, P2, uen = ICINGModel.simulate(self.t, SI_func)
+            if self.SI_augment:
+                x0 = np.append(x0, SI_func(0))
+                ICINGModel = icing_model.ICINGModel(
+                    params=None,
+                    dt=self.dt,
+                    initial_state=x0,
+                    u_funcs=u_funcs,
+                    process_noise_vars=self.process_noise_vars,
+                    measurement_noise_var=self.meas_noise_std,
+                    SI_augment=True,
+                ) 
+                BG, Q, I, P1, P2, uen, SIhat = ICINGModel.simulate(self.t, SI_func)
+                SI = np.asarray([SI_func(t) for t in self.t])
+            else:
+                ICINGModel = icing_model.ICINGModel(
+                    params=None,
+                    dt=self.dt,
+                    initial_state=x0,
+                    u_funcs=u_funcs,
+                    process_noise_vars=self.process_noise_vars,
+                    measurement_noise_var=self.meas_noise_std,
+                    SI_augment=False,
+                )
+                SI = np.asarray([SI_func(t) for t in self.t])
+                BG, Q, I, P1, P2, uen = ICINGModel.simulate(self.t, SI_func)
+
             BG_meas = BG[self.sample_indices] + rng.normal(
                 0.0, self.meas_noise_std, size=len(self.sample_indices)
             )
@@ -191,7 +209,7 @@ class PatientCohort:
                 "uex": np.asarray([uex_func(t) for t in self.t]),
                 "D": np.asarray([D_func(t) for t in self.t]),
                 "PN": np.asarray([PN_func(t) for t in self.t]),
-                "SI": np.asarray([SI_func(t) for t in self.t]),
+                "SI": SI,
             }
             data.append(patient_info)
         return data

@@ -119,17 +119,10 @@ class ICINGModel:
             # Update SI
             x_next[6, 0] = SI
 
-        # Add process noise
-        w = rng.multivariate_normal(
-            mean=np.zeros(shape=len(self.process_noise_var)),
-            cov=np.diag(self.process_noise_var),
-        )
-        w = np.expand_dims(w, axis=1)
-        # x_next_noise = np.zeros_like(x_next)
         if self.SI_augment:
-            # x_next_noise[:-1,0] = x_next[:-1,0] + w[:-1,0]
-            x_next[-1, 0] = x_next[-1,0] * (1 + w[-1,0])
-        # else:
+            noise = np.random.randn() * np.sqrt(self.process_noise_var[6])
+            x_next[6, 0] = x_next[6,0] * (1 + noise)
+        # # else:
         #     x_next_noise = x_next + w
         return x_next
 
@@ -142,19 +135,27 @@ class ICINGModel:
         )
 
     def simulate(self, t_eval, SI_func):
-        x = np.zeros((len(self.initial_state), len(t_eval)), dtype=np.float64)
+        num_states = len(self.initial_state)
+        num_samples = len(t_eval)
+        x = np.zeros((num_states, num_samples), dtype=np.float64)
         x[:,0] = self.initial_state
         x_next = self.initial_state
+        x_next = np.expand_dims(x_next, axis=1)
         for ti in range(1, len(t_eval)):
-            u = self.get_inputs(ti)
-            curr_SI = SI_func(ti)
+            u = self.get_inputs(ti) 
+            if self.SI_augment is True:
+                # curr_SI = x_next[-1,0]
+                curr_SI = SI_func(ti)
+            else:
+                curr_SI = SI_func(ti)
             x_next = self.state_update(x_next, u, ti, curr_SI=curr_SI)
-            x_next[0,0] += np.random.randn() * np.sqrt(self.process_noise_var[0])
-            x_next[1,0] += np.random.randn() * np.sqrt(self.process_noise_var[1])
-            x_next[2,0] += np.random.randn() * np.sqrt(self.process_noise_var[2])
-            x_next[3,0] += np.random.randn() * np.sqrt(self.process_noise_var[3])
-            x_next[4,0] += np.random.randn() * np.sqrt(self.process_noise_var[4])
-            x_next[5,0] += np.random.randn() * np.sqrt(self.process_noise_var[5])
+            for s in range(num_states):
+                if s < 6:
+                    x_next[s,0] += np.random.randn() * np.sqrt(self.process_noise_var[s])
+                else:
+                    # noise = np.random.randn() * np.sqrt(self.process_noise_var[s])
+                    # x_next[s,0] = x_next[s,0] * (1 + noise)
+                    x_next[s,0] *= 1
             x[:,ti] = x_next[:,0]
 
         return x
