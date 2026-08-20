@@ -35,12 +35,12 @@ def main():
         process_noise_factor = cfg[root_module]["process_noise_factor"]
         process_noises = np.asarray(
             [
-                (0.008) * process_noise_factor,
-                (0.027) * process_noise_factor,
-                (0.086) * process_noise_factor,
-                (0.001) * process_noise_factor,
-                (0.034) * process_noise_factor,
-                (1e-8) * process_noise_factor,
+                (0.008), 
+                (0.146),
+                (0.314),
+                (0.007),
+                (0.174),
+                (1e-8),
             ]
         )
 
@@ -71,7 +71,7 @@ def main():
         t = np.arange(
             0, sim_hours * 60 + 1, dt
         )  # 0 to 60 hours with minute-level resolution
-        eig_values = np.zeros((num_patients,5))
+        eig_values = np.zeros((num_patients,6))
         diag_values = np.zeros_like(eig_values)
 
         time_start = time.time()
@@ -102,6 +102,8 @@ def main():
                 D_func=D_func,
                 SI_func=SI_func,
                 threshold=threshold,
+                process_noise_vars=process_noises,
+                measurement_noise_var=meas_noise_std**2,
                 SI_est=None,
             )
             W_O, eig_vals, eig_vectors = Gramian.gramian()

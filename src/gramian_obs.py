@@ -1,6 +1,6 @@
 import numpy as np
 
-import icing_true
+import icing_model
 import utils
 
 
@@ -18,6 +18,8 @@ class EmperialGramianMatrix:
         D_func,
         SI_func,
         threshold,
+        process_noise_vars,
+        measurement_noise_var,
         SI_est=None,
     ):
         self.x0 = x0
@@ -33,6 +35,9 @@ class EmperialGramianMatrix:
         self.SI_func = SI_func
         self.threshold = threshold
         self.SI_est = SI_est
+        self.u_funcs = {"D": D_func, "PN": PN_func, "Uex": uex_func}
+        self.process_noise_vars = process_noise_vars
+        self.measurement_noise_var = measurement_noise_var
 
     def full_factorial_vectors(self):
         ints = np.arange(self.i_max, dtype=np.uint32)
@@ -50,33 +55,38 @@ class EmperialGramianMatrix:
 
     def outputs(self, x0_i, x0):
         y_i = np.zeros((self.t.shape[0], self.i_max))
-        ICINGTrue = icing_true.ICINGTrue()
 
         if self.SI_est is None:
-            self.y_0_k = icing_true.ICINGTrue().simulate(
+            ICINGModel = icing_model.ICINGModel(
+                None,
+                self.dt, 
                 x0,
-                self.t[0],
-                self.t[-1],
-                self.t,
-                self.uex_func,
-                self.PN_func,
-                self.D_func,
-                self.SI_func,
+                self.u_funcs,
+                self.process_noise_vars,
+                self.measurement_noise_var,
+                SI_augment=False
+            )
+            self.y_0_k = ICINGModel.simulate(
+              self.t,
+              self.SI_func 
             )[0]
 
             for i in range(self.i_max):
-                y_i[:, i] = ICINGTrue.simulate(
-                    x0_i[:, i],
-                    self.t[0],
-                    self.t[-1],
+                ICINGModel = icing_model.ICINGModel(
+                    None,
+                    self.dt, 
+                    x0_i[:,i],
+                    self.u_funcs,
+                    self.process_noise_vars,
+                    self.measurement_noise_var,
+                    SI_augment=False
+                )
+                y_i[:, i] = ICINGModel.simulate(
                     self.t,
-                    self.uex_func,
-                    self.PN_func,
-                    self.D_func,
-                    self.SI_func,
+                    self.SI_func
                 )[0]
         else:
-            self.y_0_k = icing_true.ICINGTrue().simulate(
+            self.y_0_k = icing_model.ICINGModel.simulate(
                 x0[:-1],
                 self.t[0],
                 self.t[-1],
