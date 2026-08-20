@@ -7,10 +7,10 @@ uex_bounds = [0, 166]
 D_bounds = [0.2, 0.4]
 PN_bounds = [0.2, 0.4]
 SI_params = [-8.05, 0.70]
-x_max = [17.5, 260, 220, 11.5 , 57]
+x_max = [31.6, 770, 820, 43.0 , 215, 44.3]
 u_en_max = 46
 SI_max = 5e-4
-y0 = [7.357, 133.115, 98.203, 8.657, 43.283]
+y0 = [9.67, 41.8, 61.4, 9.13, 45.6]
 init_cov_scale = 1
 init_cov = [2.00, 3475, 4889, 105, 2628, 14.1]
 process_noise_factor =  0.0083
@@ -26,7 +26,7 @@ bins = 100
 
 [01]
 num_patients = 1000
-n_pert = 5
+n_pert = 6
 c = 0.1
 threshold = 0.1
 
