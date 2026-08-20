@@ -50,6 +50,7 @@ def worker(task):
             process_noise_vars=process_noise_vars,
             measurement_noise_var=meas_noise_std**2,
             u_funcs=input_functions,
+            ekf=False
         )
         PF_filter = particle_filter.BootstrapParticleFilter(
             num_particles=num_particles,
@@ -85,6 +86,7 @@ def worker(task):
             process_noise_vars=process_noise_vars,
             measurement_noise_var=meas_noise_std**2,
             u_funcs=input_functions,
+            ekf=True
         )
 
         EKF_filter = ext_kalman_filter.ExtendedKalmanFilter(
@@ -139,8 +141,8 @@ def main():
                 (0.314),
                 (0.007),
                 (0.174),
-                (1e-6),
-                (8e-4) * process_noise_factor,
+                (1e-8),
+                (7.7e-5), # (1/3)^2 / 1440
             ]
         )
 

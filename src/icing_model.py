@@ -15,6 +15,7 @@ class ICINGModel:
         process_noise_vars,
         measurement_noise_var,
         SI_augment=True,
+        ekf = True,
     ):
         self.params = (
             params
@@ -52,6 +53,7 @@ class ICINGModel:
         self.ufuncs = u_funcs
 
         self.SI_augment = SI_augment
+        self.ekf = ekf
 
         with open("../config.toml", "rb") as f:
             cfg = tomllib.load(f)
@@ -119,7 +121,7 @@ class ICINGModel:
             # Update SI
             x_next[6, 0] = SI
 
-        if self.SI_augment:
+        if self.SI_augment is True and self.ekf is False:
             noise = np.random.randn() * np.sqrt(self.process_noise_var[6])
             x_next[6, 0] = x_next[6,0] * (1 + noise)
         # # else:

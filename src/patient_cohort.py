@@ -120,9 +120,9 @@ class PatientCohort:
                 Uniform_sign = sp.stats.Uniform(a=0, b=1)
                 for i in range(self.SI_piecewise_changes):
                     SI_curr_const = SI_next_const.copy()
-                    sign = 1 if Uniform_sign.sample(shape=(1,)) <= 0.5 else -1
+                    # sign = 1 if Uniform_sign.sample(shape=(1,)) <= 0.5 else -1
                     SI_next_const = SI_curr_const * (
-                        1 + sign * Uniform.sample(shape=(1,))
+                        1 + Uniform.sample(shape=(1,))
                     )
                     # clip SI
                     SI_next_const = np.clip(SI_next_const, 2.7e-5, 2.5e-3)
